@@ -140,6 +140,9 @@ SOURCE_META = [
     {"key": "xiaohongshu", "name": "小红书定向", "emoji": "📕", "category": "国内", "type": "Agent Reach", "desc": "「女人40岁之后」4 组关键词定向搜索 — 需本人登录（agent-reach login xiaohongshu）"},
     {"key": "bilibili-reach", "name": "B站定向", "emoji": "🎬", "category": "国内", "type": "Agent Reach", "desc": "40+ 女性/中女议题定向搜索（B站官方CLI）— 需本人登录"},
     {"key": "weibo-reach", "name": "微博定向", "emoji": "🗣️", "category": "国内", "type": "浏览器渲染", "desc": "微博移动版「中年女性」议题搜索（免登录，需 agent 侧预渲染页面）"},
+    {"key": "douyin-hot", "name": "抖音热点", "category": "大众风向", "status": "ok", "desc": "40+女性主力平台的大众话题风向标，免登录官方接口"},
+    {"key": "thepaper-hot", "name": "澎湃热榜", "category": "社会议题", "status": "ok", "desc": "婚姻/社保/健康等政策深度报道，免登录"},
+    {"key": "xueqiu-reach", "name": "雪球热帖", "category": "财务与搞钱", "status": "ok", "desc": "中年理财/养老规划讨论，agent-reach 免登录采集"},
 ]
 
 

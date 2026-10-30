@@ -1523,6 +1523,108 @@ def format_time(ts):
 # MAIN
 # ============================================================
 
+
+
+# ============================================================
+# SOURCE: 女人40岁之后方向 — 抖音热点榜 / 澎湃热榜 / 雪球热帖
+# ============================================================
+
+DOUYIN_HOT_API = "https://www.iesdouyin.com/web/api/v2/hotsearch/billboard/word/"
+THEPAPER_SIDEBAR_API = "https://cache.thepaper.cn/contentapi/wwwIndex/rightSidebar"
+
+
+def fetch_douyin_hot():
+    """抖音热点榜 — 40+ 女性主力平台，大众话题风向标（免登录）"""
+    items = []
+    try:
+        r = requests.get(DOUYIN_HOT_API, headers={"User-Agent": UA_BROWSER}, timeout=15)
+        r.raise_for_status()
+        for it in (r.json().get("word_list") or [])[:MAX_ITEMS_PER_SOURCE]:
+            title = (it.get("word") or "").strip()
+            if not title:
+                continue
+            items.append(make_item(
+                source="douyin-hot",
+                item_id=f"douyin-hot:{_stable_hash(title)}",
+                title=title,
+                url="https://www.douyin.com/search/" + title.replace(" ", "%20"),
+                points=int(it.get("hot_value") or 0),
+                timestamp=int(time.time()),
+                description="",
+                extra_tags=["大众话题", "女性向"],
+                extra_fields={},
+            ))
+    except Exception as e:
+        print(f"[ERROR] douyin-hot: {e}")
+    return items
+
+
+def fetch_thepaper_hot():
+    """澎湃新闻热榜 — 社会议题/政策深度（婚姻/社保/健康相关多）"""
+    items = []
+    try:
+        r = requests.get(THEPAPER_SIDEBAR_API, headers={"User-Agent": UA_BROWSER}, timeout=15)
+        r.raise_for_status()
+        for it in ((r.json().get("data") or {}).get("hotNews") or [])[:MAX_ITEMS_PER_SOURCE]:
+            title = (it.get("name") or "").strip()
+            if not title:
+                continue
+            cont_id = it.get("contId") or ""
+            items.append(make_item(
+                source="thepaper-hot",
+                item_id=f"thepaper-hot:{cont_id or _stable_hash(title)}",
+                title=title,
+                url=f"https://www.thepaper.cn/newsDetail_forward_{cont_id}" if cont_id else "https://www.thepaper.cn/",
+                points=int(it.get("praiseTimes") or 0),
+                timestamp=int(time.time()),
+                description="",
+                extra_tags=["社会议题", "政策"],
+                extra_fields={},
+            ))
+    except Exception as e:
+        print(f"[ERROR] thepaper-hot: {e}")
+    return items
+
+
+def fetch_xueqiu_reach():
+    """雪球热帖 — via agent-reach（财务与搞钱切面：中年理财/养老规划）"""
+    items = []
+    try:
+        env = dict(os.environ)
+        env.setdefault("PATH", os.environ.get("PATH", "") + os.pathsep + "/home/agentuser/.local/bin")
+        out = subprocess.run(
+            ["agent-reach", "xueqiu", "hot_posts", "--limit", "20"],
+            capture_output=True, text=True, timeout=120, env=env,
+        )
+        data = json.loads(out.stdout)
+        if not data.get("ok"):
+            print(f"[ERROR] xueqiu hot_posts: {data.get('error', {}).get('code')}")
+            return items
+        for it in data.get("items", [])[:MAX_ITEMS_PER_SOURCE]:
+            title = (it.get("title") or "").strip()
+            if not title:
+                continue
+            raw = it.get("raw") or {}
+            try:
+                likes = int(raw.get("likes") or 0)
+            except Exception:
+                likes = 0
+            items.append(make_item(
+                source="xueqiu-reach",
+                item_id=f"xueqiu-reach:{raw.get('id') or _stable_hash(title)}",
+                title=title,
+                url=it.get("url") or "",
+                points=likes,
+                timestamp=int(time.time()),
+                description=(it.get("text") or "")[:100],
+                extra_tags=["财务与搞钱", "理财"],
+                extra_fields={},
+            ))
+    except Exception as e:
+        print(f"[ERROR] xueqiu-reach: {e}")
+    return items
+
+
 def main():
     state = load_state()
     sources_state = state.get("sources", {})
@@ -1549,6 +1651,9 @@ def main():
         "xiaohongshu": fetch_xiaohongshu_reach,
         "bilibili-reach": fetch_bilibili_reach,
         "weibo-reach": fetch_weibo_reach,
+        "douyin-hot": fetch_douyin_hot,
+        "thepaper-hot": fetch_thepaper_hot,
+        "xueqiu-reach": fetch_xueqiu_reach,
     }
 
     all_results = {}
