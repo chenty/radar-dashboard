@@ -1739,18 +1739,8 @@ def main():
     start_time = time.time()
 
     # === 并行采集 ===
+    # 创作者 14 源（开发者遗留采集函数保留未删，恢复＝把对应行加回）
     collectors = {
-        "trustmrr": fetch_trustmrr,
-        "indiehackers": fetch_indiehackers,
-        "reddit": fetch_reddit,
-        "producthunt": fetch_producthunt,
-        "github": fetch_github_all,
-        "v2ex": fetch_v2ex,
-        "kr36": fetch_kr36,
-        "sspai": fetch_sspai,
-        "oschina": fetch_oschina,
-        "jike": fetch_jike,
-        "appstore": fetch_appstore,
         "weibo-hot": fetch_weibo_hot,
         "zhihu-hot": fetch_zhihu_hot,
         "bili-hot": fetch_bili_hot,

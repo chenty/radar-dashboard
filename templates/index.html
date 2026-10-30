@@ -1494,25 +1494,21 @@ async function renderModule(container, moduleName) {
 
 // ─── 信号流视图（热榜布局：左平台导航 + 右榜单） ───
 const SOURCE_LABELS = {
-  'trustmrr': 'trustmrr',
-  'indiehackers': 'IndieHackers',
-  'reddit': 'Reddit',
-  'producthunt': 'Product Hunt',
-  'github': 'GitHub 总榜',
-  'github-js': 'GitHub JS榜',
-  'github-zh': 'GitHub 中文榜',
-  'v2ex': 'V2EX',
-  'kr36': '36氪',
-  'sspai': '少数派',
-  'oschina': '开源中国',
-  'jike-ai-explore': '即刻·AI探索站',
-  'jike-ai-discuss': '即刻·AI讨论',
-  'jike-engineer': '即刻·工程师',
-  'appstore-cn': 'App Store 中国',
-  'appstore-tw': 'App Store 台湾',
-  'appstore-us': 'App Store 美国',
-  'appstore-jp': 'App Store 日本',
-  'appstore-kr': 'App Store 韩国',
+  // 创作者现役 14 源
+  'weibo-hot': '微博热搜', 'zhihu-hot': '知乎热榜', 'bili-hot': 'B站热门',
+  'douyin-hot': '抖音热点', 'baidu-hot': '百度热搜', 'thepaper-hot': '澎湃热榜',
+  'netease-hot': '网易新闻热榜', 'zhihu-daily': '知乎日报',
+  'kr36-flash': '36氪快讯', 'sspai': '少数派',
+  'xiaohongshu': '📕 小红书定向', 'bilibili-reach': '🎬 B站定向',
+  'weibo-reach': '🗣️ 微博定向', 'xueqiu-reach': '💰 雪球热帖',
+  // 旧源兜底（历史 raw 数据兼容显示）
+  'trustmrr': 'trustmrr', 'indiehackers': 'IndieHackers', 'reddit': 'Reddit',
+  'producthunt': 'Product Hunt', 'github': 'GitHub', 'github-js': 'GitHub JS',
+  'github-zh': 'GitHub 中文', 'v2ex': 'V2EX', 'kr36': '36氪', 'oschina': '开源中国',
+  'jike-ai-explore': '即刻·AI探索', 'jike-ai-discuss': '即刻·AI讨论',
+  'jike-engineer': '即刻·工程师', 'appstore-cn': 'App Store 中国',
+  'appstore-tw': 'App Store 台湾', 'appstore-us': 'App Store 美国',
+  'appstore-jp': 'App Store 日本', 'appstore-kr': 'App Store 韩国',
 };
 const SOURCE_COLORS = {
   'trustmrr': '#4ade80', 'indiehackers': '#3b82f6', 'reddit': '#f97316',
@@ -1542,7 +1538,8 @@ async function renderRaw(container, selectedDate, selectedSource) {
   const sources = raw.sources || {};
 
   // 有数据的平台列表（按固定顺序）
-  const sourceOrder = ['appstore-cn', 'appstore-tw', 'appstore-us', 'appstore-jp', 'appstore-kr', 'github', 'github-js', 'github-zh', 'v2ex', 'kr36', 'oschina', 'sspai', 'jike-ai-explore', 'jike-ai-discuss', 'jike-engineer', 'trustmrr', 'producthunt', 'indiehackers', 'reddit'];
+  // 创作者 14 源优先，旧开发者源兜底（仅当日志里仍有历史数据时显示）
+  const sourceOrder = ['xiaohongshu', 'weibo-reach', 'bilibili-reach', 'xueqiu-reach', 'weibo-hot', 'zhihu-hot', 'douyin-hot', 'baidu-hot', 'thepaper-hot', 'netease-hot', 'zhihu-daily', 'bili-hot', 'kr36-flash', 'sspai', 'github', 'github-js', 'github-zh', 'v2ex', 'kr36', 'oschina', 'jike-ai-explore', 'jike-ai-discuss', 'jike-engineer', 'appstore-cn', 'appstore-tw', 'appstore-us', 'appstore-jp', 'appstore-kr', 'trustmrr', 'indiehackers', 'reddit', 'producthunt'];
   const availableSources = sourceOrder.filter(s => sources[s] && sources[s].length);
   const activeSource = (selectedSource && sources[selectedSource]) ? selectedSource : (availableSources[0] || '');
 
