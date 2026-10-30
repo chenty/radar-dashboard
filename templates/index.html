@@ -1737,7 +1737,7 @@ async function renderTopics(container) {
       <div class="source-stat-card" style="flex:1;min-width:280px"><div class="lbl" style="margin-bottom:6px">按切面筛选</div>
         <div style="display:flex;flex-wrap:wrap;gap:5px">
           <button class="facet-btn active" data-facet="" onclick="filterByFacet(this)">全部</button>
-          ${FACETS.map(f => `<button class="facet-btn" data-facet="${f}" onclick="filterByFacet(this)">${f}${facetCount[f] ? ' ·' + facetCount[f] : ''}</button>`).join('')}
+          ${FACETS.filter(f => facetCount[f]).map(f => `<button class="facet-btn" data-facet="${f}" onclick="filterByFacet(this)">${f} ·${facetCount[f]}</button>`).join('')}
         </div>
       </div>
     </div>
