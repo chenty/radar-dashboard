@@ -1931,9 +1931,12 @@ async function renderStats(container) {
 // ─── 辅助 ───
 function moduleLabel(key) {
   const map = {
-    'opportunities': '机会', 'moneyCases': '赚钱案例', 'productInspirations': '产品灵感',
-    'growthTips': '增长技巧', 'tools': '工具', 'pitfalls': '踩坑',
-    'dataSignals': '数据信号', 'publicAccountTopics': '公众号选题', 'dailyWisdom': '心法',
+    'publicAccountTopics': '✍️ 公众号选题', 'quoteBank': '📚 金句素材', 'angles': '🔍 差异化角度',
+    'readerQA': '🎯 读者问答', 'sidebizCases': '💰 副业案例', 'growthOps': '📈 公众号运营',
+    'dataSignals': '📊 素材信号', 'dailyWisdom': '🧠 心法',
+    // 旧模块（历史 JSON 兼容显示）
+    'opportunities': '机会(旧)', 'moneyCases': '赚钱案例(旧)', 'productInspirations': '产品灵感(旧)',
+    'growthTips': '增长技巧(旧)', 'tools': '工具(旧)', 'pitfalls': '踩坑(旧)',
   };
   return map[key] || key;
 }
@@ -1965,6 +1968,8 @@ async function updateTopStats() {
         'tools': 'tools', 'pitfalls': 'pitfalls',
         'dataSignals': 'signals', 'publicAccountTopics': 'topics',
         'dailyWisdom': 'wisdom',
+        'quoteBank': 'quotes', 'angles': 'angles', 'readerQA': 'qa',
+        'sidebizCases': 'sidebiz', 'growthOps': 'growthops',
       }[mod];
       if (badgeKey) {
         const el = document.querySelector(`[data-badge="${badgeKey}"]`);
