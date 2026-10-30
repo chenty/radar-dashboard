@@ -335,6 +335,57 @@ def static_files(path):
     return send_from_directory('static', path)
 
 
+
+
+# ─── 选题状态流（信号→选题→文章）────────────────────────────
+TOPICS_STATUS_FILE = BASE_DIR / 'data' / 'topic_status.json'
+FACETS = ["自我成长", "健康与身体", "财务与搞钱", "关系与家庭", "心态与情绪", "生活方式"]
+TOPIC_STAGES = ["idea", "picked", "drafting", "published"]
+
+
+def _load_topic_status():
+    if not TOPICS_STATUS_FILE.exists():
+        return {}
+    try:
+        data = json.loads(TOPICS_STATUS_FILE.read_text())
+        return data if isinstance(data, dict) else {}
+    except (json.JSONDecodeError, OSError):
+        return {}
+
+
+def _save_topic_status(data):
+    TOPICS_STATUS_FILE.write_text(json.dumps(data, ensure_ascii=False, indent=2))
+
+
+@app.route('/api/topics/status', methods=['GET'])
+def get_topic_statuses():
+    return jsonify(_load_topic_status())
+
+
+@app.route('/api/topics/status', methods=['POST'])
+def set_topic_status():
+    """body: {key: '<date>::<hash>', stage: 'idea|picked|drafting|published', facet: '...'}"""
+    payload = request.get_json(silent=True) or {}
+    key = (payload.get('key') or '').strip()
+    if not key:
+        return jsonify({'error': 'key required'}), 400
+    data = _load_topic_status()
+    entry = data.get(key, {})
+    if 'stage' in payload:
+        stage = payload['stage']
+        if stage not in TOPIC_STAGES:
+            return jsonify({'error': 'bad stage'}), 400
+        entry['stage'] = stage
+        entry['updated_at'] = time.strftime('%Y-%m-%d %H:%M')
+    if 'facet' in payload:
+        if payload['facet'] and payload['facet'] not in FACETS:
+            return jsonify({'error': 'bad facet'}), 400
+        entry['facet'] = payload['facet'] or None
+    data[key] = entry
+    _save_topic_status(data)
+    return jsonify({'ok': True, 'key': key, **entry})
+
+
 # ═══ 收藏功能 ══════════════════════════════════════════════════════════════
 FAVORITES_FILE = REPORTS_DIR.parent / 'favorites.json'
 

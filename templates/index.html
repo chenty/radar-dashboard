@@ -453,6 +453,32 @@ body {
 .source-group-title { font-size: .9rem; font-weight: 700; color: var(--text-secondary); margin: 20px 0 10px; display: flex; align-items: center; gap: 8px; }
 .source-group-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 
+/* ─── 选题状态流与切面筛选 ─── */
+.facet-btn, .stage-btn {
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--muted-foreground);
+  border-radius: 10px;
+  padding: 3px 10px;
+  font-size: .72rem;
+  cursor: pointer;
+  transition: all .15s;
+}
+.facet-btn:hover, .stage-btn:hover { border-color: var(--accent); color: var(--foreground); }
+.facet-btn.active, .stage-btn.active {
+  background: var(--accent);
+  color: var(--foreground);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+.facet-tag {
+  background: rgba(34,197,94,.1);
+  border: 1px solid rgba(34,197,94,.25);
+  border-radius: 8px;
+  padding: 1px 8px;
+  font-size: .72rem;
+  color: var(--green, #22c55e);
+}
 /* ─── 小程序机会专页 ─── */
 .mp-grid {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 12px;
@@ -1654,9 +1680,16 @@ async function renderSources(container) {
   container.innerHTML = html;
 }
 
-// ─── 公众号选题专页（信息源式密集展示 + 筛选） ───
+// ─── 公众号选题专页（信息源式密集展示 + 筛选 + 状态流） ───
+const FACETS = ['自我成长', '健康与身体', '财务与搞钱', '关系与家庭', '心态与情绪', '生活方式'];
+const TOPIC_STAGES = { idea: '💡 想法', picked: '📌 要写', drafting: '✏️ 写作中', published: '✅ 已发布' };
+
 async function renderMiniProgram(container) {
-  const items = await api('/modules/mini-program');
+  const [items, statuses] = await Promise.all([
+    api('/modules/mini-program'),
+    api('/topics/status').catch(() => ({})),
+  ]);
+  window._topicStatuses = statuses || {};
 
   if (!items.length) {
     container.innerHTML = `
@@ -1668,17 +1701,34 @@ async function renderMiniProgram(container) {
     return;
   }
 
-  // 统计：总选题、覆盖天数、热门切面
+  // 统计：总选题、覆盖天数
   const dates = new Set(items.map(i => i.date));
-  const facets = ['自我成长', '健康与身体', '财务与搞钱', '关系与家庭', '心态与情绪', '生活方式'];
+  // 切面统计（item.facet 或已保存的手动标记）
+  const facetCount = {};
+  for (const it of items) {
+    const key = topicKey(it);
+    const f = (window._topicStatuses[key] || {}).facet || it.facet || '';
+    if (f) facetCount[f] = (facetCount[f] || 0) + 1;
+  }
+  const stageCount = {};
+  for (const it of items) {
+    const st = (window._topicStatuses[topicKey(it)] || {}).stage || 'idea';
+    stageCount[st] = (stageCount[st] || 0) + 1;
+  }
 
   let html = `
     <div class="sources-summary">
       <div class="source-stat-card"><div class="num" style="color:var(--green)">${items.length}</div><div class="lbl">公众号选题</div></div>
       <div class="source-stat-card"><div class="num">${dates.size}</div><div class="lbl">覆盖天数</div></div>
-      <div class="source-stat-card" style="flex:1;min-width:280px"><div class="lbl" style="margin-bottom:6px">内容切面</div>
-        <div style="display:flex;flex-wrap:wrap;gap:5px">${facets.map(f => `<span class="mp-kw" style="font-size:.68rem;color:var(--green);background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.25);border-radius:8px;padding:1px 8px">${f}</span>`).join('')}</div>
+      <div class="source-stat-card" style="flex:1;min-width:280px"><div class="lbl" style="margin-bottom:6px">按切面筛选</div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px">
+          <button class="facet-btn active" data-facet="" onclick="filterByFacet(this)">全部</button>
+          ${FACETS.map(f => `<button class="facet-btn" data-facet="${f}" onclick="filterByFacet(this)">${f}${facetCount[f] ? ' ·' + facetCount[f] : ''}</button>`).join('')}
+        </div>
       </div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0">
+      ${Object.entries(TOPIC_STAGES).map(([k, label]) => `<span style="font-size:.72rem;color:var(--muted-foreground)">${label} <b style="color:var(--foreground)">${stageCount[k] || 0}</b></span>`).join(' · ')}
     </div>
     <label class="visually-hidden" for="mpFilter">按关键词/标题筛选公众号选题</label>
     <input class="mp-filter" id="mpFilter" placeholder="🔍 按关键词/标题筛选…" oninput="filterMiniProgram(this.value)">
@@ -1691,38 +1741,85 @@ async function renderMiniProgram(container) {
   container.innerHTML = html;
   markFavorites(container);
 
-  // 暴露过滤函数
+  // 关键词过滤
   window.filterMiniProgram = function(q) {
     const grid = document.getElementById('mpGrid');
     const kw = q.trim().toLowerCase();
     grid.querySelectorAll('.mp-card').forEach(card => {
       const text = card.dataset.search || '';
-      card.style.display = (!kw || text.includes(kw)) ? '' : 'none';
+      const facetOk = !window._activeFacet || (card.dataset.facet || '') === window._activeFacet;
+      card.style.display = facetOk && (!kw || text.includes(kw)) ? '' : 'none';
     });
   };
+  // 切面过滤
+  window._activeFacet = '';
+  window.filterByFacet = function(btn) {
+    document.querySelectorAll('.facet-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    window._activeFacet = btn.dataset.facet || '';
+    const input = document.getElementById('mpFilter');
+    if (input) window.filterMiniProgram(input.value);
+  };
+}
+
+function topicKey(item) {
+  // 稳定键：日期 + 标题（与后端 _stable_hash 无关，前端用简单 hash 即可，但须跨会话稳定）
+  let h = 0;
+  const str = (item.date || '') + '::' + (item.title || '');
+  for (let i = 0; i < str.length; i++) { h = ((h << 5) - h + str.charCodeAt(i)) | 0; }
+  return (item.date || '') + '::' + (h >>> 0).toString(36);
+}
+
+async function setTopicStage(key, stage) {
+  await fetch('/api/topics/status', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({key, stage}),
+  });
+  if (!window._topicStatuses) window._topicStatuses = {};
+  window._topicStatuses[key] = {...(window._topicStatuses[key] || {}), stage};
+  // 更新按钮态
+  document.querySelectorAll(`[data-topic-key="${key}"] .stage-btn`).forEach(b => {
+    b.classList.toggle('active', b.dataset.stage === stage);
+  });
 }
 
 function mpCardHtml(item) {
   const searchText = [item.title, item.signal, item.corePoint, item.controversy,
     item.audience, item.expression, item.relatedSignal]
     .join(' ').toLowerCase();
+  const key = topicKey(item);
+  const st = (window._topicStatuses || {})[key] || {};
+  const facet = st.facet || item.facet || '';
+  const stage = st.stage || 'idea';
   const favObj = {type: 'miniapp', title: item.title || '未命名选题',
     url: '', source: 'miniapp', source_label: '✍️ 公众号选题', date: item.date || '',
     desc: (item.corePoint || '') + ' | ' + (item.controversy || ''), raw: item};
+  // 写稿 prompt：把整张选题卡变成可直接发给 AI 的成稿指令
+  const draftPrompt = '请以「' + (item.title || '') + '」为题写一篇公众号文章，面向' + (item.audience || '40+女性读者') +
+    '。核心观点：' + (item.corePoint || '') + '。必须呈现的争议点（两面都要摆出来，不下结论，让读者自己判断）：' +
+    (item.controversy || '') + '。表达要求：' + (item.expression || '') +
+    '。开头用一个真实感场景切入，不鸡汤、不泛科普，1200-1800字。';
   return `
-    <div class="mp-card" data-search="${escapeHtml(searchText)}">
+    <div class="mp-card" data-search="${escapeHtml(searchText)}" data-facet="${escapeHtml(facet)}" data-topic-key="${key}">
       <div class="mp-head">
         <span class="mp-title">✍️ ${escapeHtml(item.title || '未命名选题')}</span>
         ${favBtnHtml(favObj, 'large')}
         ${copyBtnHtml(favObj, 'large')}
         <span class="mp-date">${item.date}</span>
       </div>
+      ${facet ? `<div class="mp-line"><b>切面：</b><span class="facet-tag">${escapeHtml(facet)}</span></div>` : ''}
       ${item.corePoint ? `<div class="mp-line"><b>核心观点：</b>${escapeHtml(item.corePoint)}</div>` : ''}
       ${item.controversy ? `<div class="mp-line" style="color:var(--orange)"><b>🔥 争议点：</b>${escapeHtml(item.controversy)}</div>` : ''}
       ${item.audience ? `<div class="mp-line"><b>目标读者：</b>${escapeHtml(item.audience)}</div>` : ''}
       ${item.expression ? `<div class="mp-line"><b>表达方式：</b>${escapeHtml(item.expression)}</div>` : ''}
       ${item.signal ? `<div class="mp-line"><b>启发：</b>${escapeHtml(item.signal)}</div>` : ''}
       ${item.relatedSignal ? `<div class="mp-signal">📡 ${escapeHtml(item.relatedSignal)}</div>` : ''}
+      <div class="mp-actions" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;align-items:center">
+        ${Object.entries(TOPIC_STAGES).map(([k, label]) =>
+          `<button class="stage-btn${stage === k ? ' active' : ''}" data-stage="${k}" onclick="setTopicStage('${key}', '${k}')">${label}</button>`).join('')}
+        <button class="stage-btn" title="复制写稿指令，粘贴给任意 AI 即可出初稿" onclick="navigator.clipboard.writeText(${JSON.stringify(draftPrompt).replace(/"/g, '&quot;')}); this.textContent='✓ 已复制'; setTimeout(()=>this.textContent='📝 复制写稿指令', 1500)">📝 复制写稿指令</button>
+      </div>
     </div>`;
 }
 async function renderStats(container) {
