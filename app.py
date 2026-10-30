@@ -326,7 +326,9 @@ def get_trends():
 
 @app.route('/')
 def index():
-    return send_from_directory('templates', 'index.html')
+    resp = send_from_directory('templates', 'index.html')
+    resp.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    return resp
 
 
 @app.route('/<path:path>')
