@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-daily_signals.py — 多渠道独立开发者信号采集器 v3 (重构版)
+daily_signals.py — 「女人40岁之后」选题信号采集器 v4
 ===========================================================
 并行抓取 4 个数据源:
   1. trustmrr.com   (REST API)
@@ -1880,7 +1880,7 @@ def main():
         return
 
     # === 输出结构化数据 ===
-    print(f"📡 独立开发者信号雷达 — {datetime.now(tz=timezone(timedelta(hours=8))).strftime('%Y-%m-%d %H:%M')}")
+    print(f"📡 「女人40岁之后」选题雷达 — {datetime.now(tz=timezone(timedelta(hours=8))).strftime('%Y-%m-%d %H:%M')}")
     print()
     print(f"采集耗时: {elapsed:.1f}s | 新增信号: {grand_total_new}")
     source_labels = {

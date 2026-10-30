@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Radar Dashboard — 独立开发者雷达日报 可视化面板"""
+"""Radar Dashboard — 「女人40岁之后」选题雷达 可视化面板"""
 
 import json
 import os
@@ -72,7 +72,7 @@ def get_module(module_name):
     """跨日期聚合指定模块的全部内容"""
     module_map = {
         'signals': 'dataSignals',
-        # 独立开发者遗留模块：JSON 里如仍存在可经旧路由访问，面板不再展示
+        # 旧定位遗留模块：JSON 里如仍存在可经旧路由访问，面板不再展示
         'opportunities': 'opportunities',
         'money-cases': 'moneyCases',
         'inspirations': 'productInspirations',
@@ -129,7 +129,7 @@ def list_raw_dates():
 
 # 信息源元信息（用于管理页展示）
 # 信息源管理页展示的源清单（创作者版：只显示与「女人40岁之后」选题相关的 8 源）。
-# 独立开发者遗留源（trustmrr/indiehackers/reddit/producthunt/github×3/v2ex/kr36/oschina/jike×3/appstore×5）
+# 旧定位遗留源（trustmrr/indiehackers/reddit/producthunt/github×3/v2ex/kr36/oschina/jike×3/appstore×5）
 # 已从面板移除；daily_signals.py 的采集函数保留未删，需要时把对应行加回这里即可恢复。
 SOURCE_META = [
     {"key": "sspai", "name": "少数派", "emoji": "🟡", "category": "国内", "type": "RSS", "desc": "效率工具、数字生活、App 推荐"},
