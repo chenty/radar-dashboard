@@ -118,6 +118,8 @@ body {
 .module-color-pitfalls { border-top: 3px solid var(--red); }
 .module-color-dataSignals { border-top: 3px solid var(--accent); }
 .module-color-dailyWisdom { border-top: 3px solid var(--yellow); }
+.module-color-quoteBank { border-top: 3px solid var(--purple); }
+.module-color-sidebizCases { border-top: 3px solid var(--orange); }
 
 /* ─── Sidebar ─── */
 .sidebar {
@@ -739,17 +741,46 @@ body {
         <span>公众号选题库</span>
         <span class="badge" data-badge="topics">0</span>
       </a>
+      <a class="nav-item" href="#/module/quotes" data-route="module-quotes">
+        <span class="dot" style="background:var(--purple)"></span>
+        <span>金句素材库</span>
+        <span class="badge" data-badge="quotes">0</span>
+      </a>
+      <a class="nav-item" href="#/module/angles" data-route="module-angles">
+        <span class="dot" style="background:var(--orange)"></span>
+        <span>差异化角度库</span>
+        <span class="badge" data-badge="angles">0</span>
+      </a>
+      <a class="nav-item" href="#/module/qa" data-route="module-qa">
+        <span class="dot" style="background:var(--pink)"></span>
+        <span>读者问答库</span>
+        <span class="badge" data-badge="qa">0</span>
+      </a>
+      <a class="nav-item" href="#/module/sidebiz" data-route="module-sidebiz">
+        <span class="dot" style="background:var(--orange)"></span>
+        <span>副业案例库</span>
+        <span class="badge" data-badge="sidebiz">0</span>
+      </a>
+      <a class="nav-item" href="#/module/growthops" data-route="module-growthops">
+        <span class="dot" style="background:var(--teal)"></span>
+        <span>公众号运营库</span>
+        <span class="badge" data-badge="growthops">0</span>
+      </a>
       <a class="nav-item" href="#/module/signals" data-route="module-signals">
         <span class="dot" style="background:var(--accent)"></span>
-        <span>数据信号库</span>
+        <span>素材信号库</span>
         <span class="badge" data-badge="signals">0</span>
+      </a>
+      <a class="nav-item" href="#/module/reviews" data-route="module-reviews">
+        <span class="dot" style="background:var(--teal)"></span>
+        <span>选题复盘库</span>
+        <span class="badge" data-badge="reviews">0</span>
       </a>
       <a class="nav-item" href="#/module/wisdom" data-route="module-wisdom">
         <span class="dot" style="background:var(--yellow)"></span>
         <span>心法库</span>
         <span class="badge" data-badge="wisdom">0</span>
       </a>
-    </div>
   </nav>
   <div class="sidebar-footer">
     <span id="reportCount">加载中...</span>
@@ -1160,6 +1191,12 @@ async function render() {
     } else if (parts[0] === 'module' && parts[1]) {
       const labels = {
         'signals': '📊 素材信号库',
+        'quotes': '📚 金句素材库',
+        'angles': '🔍 差异化角度库',
+        'qa': '🎯 读者问答库',
+        'sidebiz': '💰 副业案例库',
+        'growthops': '📈 公众号运营库',
+        'reviews': '📈 选题复盘库',
         'topics': '✍️ 公众号选题库',
         'wisdom': '🧠 心法库',
       };
@@ -1236,6 +1273,8 @@ async function renderDaily(container, dateStr) {
     { key: 'dataSignals', emoji: '📊', label: '今日素材信号' },
     { key: 'publicAccountTopics', emoji: '✍️', label: '公众号选题 · 女人40岁之后' },
     { key: 'dailyWisdom', emoji: '🧠', label: '今日心法' },
+    { key: 'quoteBank', emoji: '📚', label: '今日金句素材' },
+    { key: 'sidebizCases', emoji: '💰', label: '今日副业案例' },
     // 独立开发者遗留模块（cron 已不再生成，历史数据仍可见）
     { key: 'opportunities', emoji: '📌', label: '今日机会' },
     { key: 'moneyCases', emoji: '💰', label: '今日赚钱案例' },

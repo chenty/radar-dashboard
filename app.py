@@ -80,6 +80,11 @@ def get_module(module_name):
         'tools': 'tools',
         'pitfalls': 'pitfalls',
         'topics': 'publicAccountTopics',
+        'quotes': 'quoteBank',
+        'angles': 'angleBank',
+        'qa': 'readerQA',
+        'sidebiz': 'sidebizCases',
+        'growthops': 'growthOps',
         'mini-program': 'publicAccountTopics',  # 旧路由别名（兼容已保存的收藏/书签）
         'wisdom': 'dailyWisdom',
     }
@@ -386,6 +391,64 @@ def set_topic_status():
     data[key] = entry
     _save_topic_status(data)
     return jsonify({'ok': True, 'key': key, **entry})
+
+
+
+
+# ─── 选题复盘库（文章发布数据 → 反推选题表现）──────────────
+REVIEWS_FILE = BASE_DIR / 'data' / 'topic_reviews.json'
+
+
+def _load_reviews():
+    if not REVIEWS_FILE.exists():
+        return []
+    try:
+        data = json.loads(REVIEWS_FILE.read_text())
+        return data if isinstance(data, list) else []
+    except (json.JSONDecodeError, OSError):
+        return []
+
+
+@app.route('/api/topic-reviews', methods=['GET'])
+def list_topic_reviews():
+    return jsonify(_load_reviews())
+
+
+@app.route('/api/topic-reviews', methods=['POST'])
+def add_topic_review():
+    """body: {title, published_date, facet, source, views, likes, reads, followers, notes}"""
+    payload = request.get_json(silent=True) or {}
+    title = (payload.get('title') or '').strip()
+    if not title:
+        return jsonify({'error': 'title required'}), 400
+    reviews = _load_reviews()
+    # 同标题覆盖更新（复盘一次成稿）
+    entry = {
+        'id': hashlib.md5(title.encode()).hexdigest()[:10],
+        'title': title,
+        'published_date': payload.get('published_date', time.strftime('%Y-%m-%d')),
+        'facet': payload.get('facet', ''),
+        'source': payload.get('source', ''),
+        'views': int(payload.get('views') or 0),
+        'likes': int(payload.get('likes') or 0),
+        'reads': int(payload.get('reads') or 0),
+        'followers': int(payload.get('followers') or 0),
+        'notes': payload.get('notes', ''),
+        'updated_at': time.strftime('%Y-%m-%d %H:%M'),
+    }
+    reviews = [r for r in reviews if r.get('title') != title]
+    reviews.append(entry)
+    reviews.sort(key=lambda x: x.get('published_date', ''), reverse=True)
+    REVIEWS_FILE.write_text(json.dumps(reviews, ensure_ascii=False, indent=2))
+    return jsonify({'ok': True, **entry})
+
+
+@app.route('/api/topic-reviews/<review_id>', methods=['DELETE'])
+def delete_topic_review(review_id):
+    reviews = _load_reviews()
+    reviews = [r for r in reviews if r.get('id') != review_id]
+    REVIEWS_FILE.write_text(json.dumps(reviews, ensure_ascii=False, indent=2))
+    return jsonify({'ok': True})
 
 
 # ═══ 收藏功能 ══════════════════════════════════════════════════════════════
