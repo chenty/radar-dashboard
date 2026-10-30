@@ -11,7 +11,7 @@
 
 > 截图为「✍️ 公众号选题」专页：选题卡（核心观点 / 争议点 / 表达方式）、状态流按钮（想法→要写→写作中→已发布）、切面筛选、一键复制写稿指令。
 
-自媒体创作者的选题雷达——每天自动采集 **26 个国内外信息源**（微博热搜 / 知乎热榜 / B站 / 小红书 / 36氪 / GitHub / Product Hunt / V2EX…），由 AI 生成每日选题日报，帮你找到值得开口说的话题。
+自媒体创作者的选题雷达——每天自动采集 **14 个信息源**（微博热搜 / 知乎热榜 / B站 / 小红书 / 抖音 / 百度 / 澎湃 / 网易 / 雪球 Hunt / V2EX…），由 AI 生成每日选题日报，帮你找到值得开口说的话题。
 
 > 🎁 已内置示例数据，安装完打开就能看到完整效果。
 >
@@ -48,19 +48,19 @@ bash start.sh
 
 | 页面 | 说明 |
 |------|------|
-| **日报时间线** | 每日 AI 选题日报（公众号选题 / 机会 / 赚钱案例 / 心法…） |
+| **日报时间线** | 每日 AI 选题日报（公众号选题 / 金句素材 / 副业案例 / 心法…） |
 | **✍️ 公众号选题** | ⭐ 本版核心：聚合每日选题（标题 / 观点 / 争议点 / 表达建议） |
-| **📡 信号流** | tophub 式热榜：左侧 26 个平台，右侧紧凑榜单 |
+| **📡 信号流** | tophub 式热榜：左侧 14 个源，右侧紧凑榜单 |
 | **🔌 信息源管理** | 各平台接入状态 |
 | **⭐ 我的收藏** | 收藏单条信息 + 复制发给 AI 分析 |
 
-## 📡 数据源（26 个）
+## 📡 数据源（14 个）
 
 | 类别 | 源 | 说明 |
 |------|-----|------|
 | **核心中文源** | weibo-hot 🔥 / zhihu-hot 🧩 / bili-hot 📺 / kr36-flash 📰 | 大众情绪、观点争议、生活方式趋势——公众号选题的富矿 |
 | **定向搜索**（需登录） | xiaohongshu / bilibili-reach / weibo-reach | 面向「女人 40 岁之后」的 4 组关键词定向搜索，挖热榜之外的长尾高共鸣内容 |
-| **海外/技术** | github ×3 / reddit / producthunt / trustmrr / indiehackers | AI 与科技背景信号 |
+| **财务切面** | xueqiu-reach（雪球热帖） | 中年理财 / 养老规划讨论 |
 
 > 定向搜索源通过 [Agent Reach](https://github.com/Panniantong/Agent-Reach) 接入（小红书/B站需本人扫码登录一次；微博走浏览器渲染免登录）。登录态过期时对应源静默缺失，不影响其他源。
 
@@ -92,15 +92,19 @@ bash start.sh
 
 这个仓库是一个**「采集 → 生成 → 展示」三段式数据管道**，Agent 接手时按这个顺序读：
 
-1. **数据从哪来**：`scripts/daily_signals.py` 每天并行抓取 26 个源，原始信号存 `data/raw_signals/YYYY-MM-DD.json`（按平台分组，含 url）。三个 `fetch_*_reach()` 定向源依赖 Agent Reach 登录态 / 浏览器渲染缓存（`~/.hermes/cache/weibo_reach_last_page.html`，1 小时有效，缺失时自动跳过）。
+1. **数据从哪来**：`scripts/daily_signals.py` 每天并行抓取 14 个源，原始信号存 `data/raw_signals/YYYY-MM-DD.json`（按平台分组，含 url）。三个 `fetch_*_reach()` 定向源依赖 Agent Reach 登录态 / 浏览器渲染缓存（`~/.hermes/cache/weibo_reach_last_page.html`，1 小时有效，缺失时自动跳过）。
 2. **日报怎么生成**：把采集到的信号交给 LLM，按**日报 JSON 格式**整理成 `data/reports/YYYY-MM-DD.json`。核心结构：
    ```json
-   { "date": "2026-10-30", "sources": {"weibo-hot": 40, ...},
-     "modules": { "opportunities": [...], "moneyCases": [...], "publicAccountTopics": [...], "dailyWisdom": {...} } }
+   { "date": "2026-10-30", "sources": {"weibo-hot": 40, ...}, "tags": [...],
+     "modules": { "publicAccountTopics": [...], "quoteBank": [...], "dataSignals": [...],
+                  "sidebizCases": [...], "growthOps": [...], "dailyWisdom": {...} } }
    ```
+   全部模块键：publicAccountTopics（选题）/ quoteBank（金句）/ angles（差异化角度，待接）/
+   readerQA（读者问答，待接）/ sidebizCases（副业案例）/ growthOps（公众号运营）/
+   dataSignals（素材信号）/ dailyWisdom（心法）。
    「公众号选题」就是 `modules.publicAccountTopics` 数组（字段：title / signal / corePoint / controversy / audience / expression / relatedSignal）——面板专页直接读它，跨日期自动聚合。
 3. **怎么展示**：`app.py`（Flask 后端，只读 JSON 出 REST API）+ `templates/index.html`（单文件前端，双主题，hash 路由）。后端无数据库，纯文件即数据。
-4. **要自动化的 Agent**：读 `hermes-integration/HERMES-INTEGRATION.md`（配置 Hermes 全自动采集+生成+推送的完整步骤）。
+4. **要自动化的 Agent**：用 Hermes cron job 每天 08:45 跑采集脚本 + 按 README 提示词生成日报（本项目实际在用的方式）。
 5. **Key 约定**：脚本按 环境变量 → 项目 `.env` → `~/.hermes/.env`（Hermes 用户的 Key，自动复用）的顺序读 `DEEPSEEK_API_KEY`；`TRUSTMRR_API_KEY` / `PH_TOKEN` / `REDDIT_*` 只从环境变量和项目 `.env` 读。
 
 **Agent 要做的日常操作**：加数据源（改 daily_signals.py + SOURCE_META）、改日报风格（改 cron prompt 模板）、修展示（改 index.html）、跑采集（`venv/bin/python scripts/daily_signals.py`）。
@@ -108,7 +112,7 @@ bash start.sh
 ## 🔄 每日数据采集
 
 ```bash
-# 手动采集一次（约 2 分钟，26 个源）
+# 手动采集一次（约 1 分钟，14 个源）
 venv/bin/python scripts/daily_signals.py
 
 # 自动采集：加到系统定时任务（每天 08:45）
@@ -130,23 +134,26 @@ crontab -e
 1. 先跑采集：`venv/bin/python scripts/daily_signals.py`
 2. 把终端输出的信号列表**复制**给任何 AI（ChatGPT/Claude/DeepSeek）
 3. 让 AI 按下面的格式整理成日报 JSON（**想改方向？把这里的话也改掉**）：
-   > 你是「女人 40 岁之后」公众号的每日选题雷达。从信号里精选，输出：1️⃣ 今日机会 2️⃣ 赚钱案例 3️⃣ 增长技巧 4️⃣ 数据信号 5️⃣ **公众号选题（最高优先级，3-5 条：Hook 标题 / 信号来源 / 核心观点 / 真争议点（两面性）/ 40+ 女性读者画像 / 表达方式建议 / 关联信号，覆盖自我成长/健康/财务/关系/心态/生活方式不同切面，不鸡汤、不泛科普）** 🎯 今日心法。
+   > 你是「女人 40 岁之后」公众号的每日选题雷达。从信号里精选，输出（素材不足的模块省略）：
+> 1. **公众号选题**（最高优先级，3-5 条）：Hook 标题 / 内容切面（只能取：自我成长/健康与身体/财务与搞钱/关系与家庭/心态与情绪/生活方式 之一，各条覆盖不同切面）/ 信号来源 / 核心观点 / 真争议点（两面性）/ 40+ 女性读者画像 / 表达方式建议 / 关联信号——不鸡汤、不泛科普，热榜话题优先落到 40+ 女性真实处境
+> 2. **金句素材**（2-4 条）：可直接引用的原话 / 说话者 / 主题 / 适合用在开头·过渡·结尾
+> 3. **素材信号**（3-6 条）：观察 / 判断 / 可引用原话 / 可写入文章的角度
+> 4. **40+ 女性副业案例**（1-2 条，只收真实可查的）：谁 / 做了什么 / 收入（不确定写「未核实」）/ 做了多久 / 能否复制
+> 5. **公众号运营**（1 条，对本号可执行的）：策略 / 适用场景
+> 6. **今日心法**：一句话方法论 / 场景 / 步骤 / 从当天数据如何提炼
 4. 把 AI 返回的 JSON 保存为 `data/reports/{日期}.json`（结构见上「Agent 阅读指南」）
 
 ### 方式 B：接入 Hermes Agent（完整自动化）
 
-雷达日报原生跑在 [Hermes Agent](https://hermes-agent.nousresearch.com) 上，配置 cron 后每天 08:45 自动采集 → AI 生成日报 → 推送到会话。配置步骤见 `hermes-integration/HERMES-INTEGRATION.md`。
+雷达日报原生跑在 [Hermes Agent](https://hermes-agent.nousresearch.com) 上，配置 cron 后每天 08:45 自动采集 → AI 生成日报 → 推送到会话。配置步骤见下文「生成每日 AI 日报 · 方式 B」。
 
 ## 🔧 配置说明（.env）
 
-全部可选，不填也能跑。**详细的申请步骤见 [`CONFIG-GUIDE.md`](CONFIG-GUIDE.md)（手把手教学）**。
+全部可选，不填也能跑。现有 14 源均免登录、无需任何 API Key。
 
 | Key | 作用 | 获取 | 优先级 |
 |-----|------|------|--------|
-| `DEEPSEEK_API_KEY` | 英文信号自动翻译中文 | https://platform.deepseek.com/ | ⭐ 推荐 |
-| `TRUSTMRR_API_KEY` | 已验证收入创业公司数据 | https://trustmrr.com/ | 🟢 可选 |
-| `PH_TOKEN` | Product Hunt 每日新品 | https://www.producthunt.com/v2/oauth/applications | 🟢 可选 |
-| `REDDIT_*` | Reddit 信号 | — | ⚪ 可不配（易风控） |
+| `DEEPSEEK_API_KEY` | 英文信号自动翻译中文（现役 14 源全中文，基本用不上） | https://platform.deepseek.com/ | ⚪ 可不配 |
 
 > 💡 **用了 Hermes 就不用重复配 DeepSeek Key**：采集脚本会自动读取 `~/.hermes/.env` 里的 `DEEPSEEK_API_KEY`，无需在项目 `.env` 里再填一遍。
 >
@@ -159,7 +166,7 @@ radar-dashboard/
 ├── app.py                  # Web 后端（REST API，只读 JSON）
 ├── templates/index.html    # 前端页面（单文件，双主题，hash 路由）
 ├── scripts/
-│   ├── daily_signals.py    # 数据采集脚本（26 源，含 3 个 agent-reach 定向源）
+│   ├── daily_signals.py    # 数据采集脚本（14 源，含 4 个 agent-reach 定向源）
 │   ├── weibo_render_urls.py        # 微博定向搜索 URL 列表
 │   ├── weibo_reach_search.py       # 微博采集辅助
 │   └── screenshot.py       # 生成 README 截图（Playwright）
@@ -168,7 +175,6 @@ radar-dashboard/
 │   ├── reports/            # 日报 JSON
 │   ├── raw_signals/        # 原始信号 JSON
 │   └── favorites.json      # 你的收藏
-├── hermes-integration/     # Hermes 自动化配置
 ├── requirements.txt
 ├── install.sh              # 一键安装
 ├── start.sh                # 启动
@@ -177,8 +183,8 @@ radar-dashboard/
 
 ## ❓ 常见问题
 
-**打开后只有示例数据？**
-内置的 `2026-08-02.json` 是示例数据。你采集/生成的数据会自动追加，按日期区分。
+**打开后没有数据？**
+先跑一次采集并生成日报（见「生成每日 AI 日报」方式 A），数据会按日期自动展示。
 
 **小红书 / B站定向搜索没数据？**
 这两个源需要本人扫码登录（Agent Reach 专用浏览器）：`agent-reach login xiaohongshu` / `agent-reach login bilibili`。登录态过期时源会静默缺失，重新登录即恢复。微博源需要 agent 侧先渲染页面（详见 Agent 阅读指南）。
