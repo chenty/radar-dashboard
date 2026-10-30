@@ -811,7 +811,7 @@ def _parse_rss_feed(url, source, tag_hint, max_items=30):
             if guid_el is not None and guid_el.text:
                 item_id = guid_el.text.strip()[:100]
             elif link:
-                item_id = f"link:{hash(link) & 0xffffffff}"
+                item_id = f"link:{_stable_hash(link)}"
 
             if not item_id:
                 continue
@@ -874,7 +874,7 @@ def fetch_weibo_hot():
                 continue
             items.append(make_item(
                 source="weibo-hot",
-                item_id=f"weibo-hot:{it.get('index','')}:{hash(title) & 0xffffffff}",
+                item_id=f"weibo-hot:{it.get('index','')}:{_stable_hash(title)}",
                 title=title,
                 url=it.get("link") or "",
                 points=0,
@@ -954,6 +954,12 @@ def fetch_bili_hot():
     return items
 
 
+def _stable_hash(s: str) -> str:
+    """跨进程稳定的内容哈希（hash() 带随机盐，进程重启后变化，不能用于增量去重）"""
+    import hashlib
+    return hashlib.md5(s.encode("utf-8")).hexdigest()[:12]
+
+
 def fetch_xiaohongshu_reach():
     """小红书 — via agent-reach CLI（已登录专用浏览器）"""
     items = []
@@ -980,7 +986,7 @@ def fetch_xiaohongshu_reach():
                     title = (it.get("title") or "").strip()
                     if not title:
                         continue
-                    item_id = f"xiaohongshu:{url.split('/search_result/')[-1].split('?')[0] or hash(title) & 0xffffffff}"
+                    item_id = f"xiaohongshu:{url.split('/search_result/')[-1].split('?')[0] or _stable_hash(title)}"
                     if item_id in seen_ids:
                         continue
                     seen_ids.add(item_id)
@@ -989,13 +995,22 @@ def fetch_xiaohongshu_reach():
                         likes_num = int(likes)
                     except Exception:
                         likes_num = 0
+                    # 发布时间：published_at 形如 2026-08-16
+                    ts = int(time.time())
+                    pub = (it.get("published_at") or "").strip()
+                    if pub:
+                        try:
+                            from datetime import datetime as _dt
+                            ts = int(_dt.strptime(pub, "%Y-%m-%d").timestamp())
+                        except Exception:
+                            pass
                     items.append(make_item(
                         source="xiaohongshu",
                         item_id=item_id,
                         title=title,
                         url=url,
                         points=likes_num,
-                        timestamp=int(time.time()),
+                        timestamp=ts,
                         description=f"作者 {it.get('author', '')} | 赞 {likes}",
                         extra_tags=["女性话题", "生活方式"],
                         extra_fields={},
@@ -1032,18 +1047,23 @@ def fetch_bilibili_reach():
                     if not title:
                         continue
                     m = re.search(r"(av\d+|BV[0-9A-Za-z]+)", url)
-                    item_id = f"bilibili-reach:{m.group(1) if m else hash(title) & 0xffffffff}"
+                    item_id = f"bilibili-reach:{m.group(1) if m else _stable_hash(title)}"
                     if item_id in seen_ids:
                         continue
                     seen_ids.add(item_id)
                     raw = it.get("raw") or {}
                     desc = f"UP: {it.get('author', '')}"
+                    # raw.play = 播放量，作为热度
+                    try:
+                        plays = int(raw.get("play") or 0)
+                    except Exception:
+                        plays = 0
                     items.append(make_item(
                         source="bilibili-reach",
                         item_id=item_id,
                         title=title,
                         url=url,
-                        points=0,
+                        points=plays,
                         timestamp=int(time.time()),
                         description=desc[:400],
                         extra_tags=["生活方式", "女性话题"],
@@ -1067,14 +1087,28 @@ def fetch_weibo_reach():
     queries = ["中年女性 焦虑", "40岁 婚姻", "中年女性 健康", "40岁 独立"]
     seen_ids = set()
 
-    def _parse_card_text(raw_html: str):
-        """从页面 HTML 正则抽取微博正文卡片"""
+    def _parse_cards(raw_html: str):
+        """从渲染页 HTML 按卡片切块，抽取正文 + permalink + 发布时间"""
         out = []
-        for m in re.finditer(r'<div class="weibo-text">(.*?)</div>', raw_html, re.S):
-            text = re.sub(r"<[^>]+>", "", m.group(1))
+        blocks = re.split(r'<div class="card-wrap">', raw_html)
+        for b in blocks[1:]:
+            tm = re.search(r'<div class="weibo-text">(.*?)</div>', b, re.S)
+            if not tm:
+                continue
+            text = re.sub(r"<[^>]+>", "", tm.group(1))
             text = re.sub(r"\s+", " ", text).strip()
-            if len(text) >= 15:
-                out.append(text[:300])
+            if len(text) < 15:
+                continue
+            # permalink：正文或卡片内的 /status/<id> 链接（约 2/3 帖子有）
+            sm = re.search(r'href="(/status/\d+)"', b)
+            permalink = f"https://m.weibo.cn{sm.group(1)}" if sm else ""
+            # 发布时间：卡片头部 ct/time 块（"10-18 03:37" / "N小时前" / "N分钟前"）
+            tmatch = re.search(r'class="[^"]*(?:ct|time)[^"]*"[^>]*>([^<]{2,30})<', b)
+            out.append({
+                "text": text[:300],
+                "permalink": permalink,
+                "time_str": tmatch.group(1).strip() if tmatch else "",
+            })
         return out
 
     html = ""
@@ -1100,19 +1134,43 @@ def fetch_weibo_reach():
         print("[ERROR] weibo-reach: no rendered page available (need browser render first)")
         return items
 
-    texts = _parse_card_text(html)
-    for t in texts:
-        item_id = f"weibo-reach:{hash(t) & 0xffffffff}"
+    texts = _parse_cards(html)
+    now = int(time.time())
+    for card in texts:
+        t = card["text"]
+        item_id = f"weibo-reach:{_stable_hash(t)}"
         if item_id in seen_ids:
             continue
         seen_ids.add(item_id)
+        # 发布时间：把相对时间/日期串解析为 ts；解析不了用采集时刻
+        ts = now
+        ts_str = card.get("time_str", "")
+        if ts_str:
+            try:
+                m = re.match(r"(\d{1,2})-(\d{1,2}) (\d{1,2}):(\d{2})", ts_str)
+                if m:
+                    mo, d, hh, mm = map(int, m.groups())
+                    from datetime import datetime as _dt, timezone as _tz, timedelta as _td
+                    y = now_year = _dt.now(_tz(_td(hours=8))).year
+                    ts = int(_dt(y, mo, d, hh, mm, tzinfo=_tz(_td(hours=8))).timestamp())
+                else:
+                    m = re.match(r"(\d+)小时前", ts_str)
+                    if m:
+                        ts = now - int(m.group(1)) * 3600
+                    else:
+                        m = re.match(r"(\d+)分钟前", ts_str)
+                        if m:
+                            ts = now - int(m.group(1)) * 60
+            except Exception:
+                pass
         items.append(make_item(
             source="weibo-reach",
             item_id=item_id,
             title=t[:80],
-            url="https://m.weibo.cn/search?containerid=100103type%3D1%26q%3D%E4%B8%AD%E5%B9%B4%E5%A5%B3%E6%80%A7",
+            # permalink 优先（约 2/3 帖子可回原帖），否则退回搜索页
+            url=card.get("permalink") or "https://m.weibo.cn/search?containerid=100103type%3D1%26q%3D%E4%B8%AD%E5%B9%B4%E5%A5%B3%E6%80%A7",
             points=0,
-            timestamp=int(time.time()),
+            timestamp=ts,
             description=t,
             extra_tags=["女性话题", "大众情绪"],
             extra_fields={},
@@ -1179,7 +1237,7 @@ def fetch_jike():
                 pid = ""
                 if link:
                     m = re.search(r"originalPosts/([a-zA-Z0-9]+)", link)
-                    pid = m.group(1) if m else f"link:{hash(link) & 0xffffffff}"
+                    pid = m.group(1) if m else f"link:{_stable_hash(link)}"
                 if not pid:
                     continue
 

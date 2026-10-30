@@ -145,6 +145,9 @@ SOURCE_META = [
     {"key": "zhihu-hot", "name": "知乎热榜", "emoji": "🧩", "category": "国内", "type": "API", "desc": "知乎热榜 — 观点争议与深度讨论（找真争议点的富矿）"},
     {"key": "bili-hot", "name": "B站热门", "emoji": "📺", "category": "国内", "type": "API", "desc": "B站全站热门 — 生活方式/健康/情感类视频趋势"},
     {"key": "kr36-flash", "name": "36氪快讯", "emoji": "📰", "category": "国内", "type": "RSS", "desc": "36氪快讯 — 消费/创投/生活方式商业动态"},
+    {"key": "xiaohongshu", "name": "小红书定向", "emoji": "📕", "category": "国内", "type": "Agent Reach", "desc": "「女人40岁之后」4 组关键词定向搜索 — 需本人登录（agent-reach login xiaohongshu）"},
+    {"key": "bilibili-reach", "name": "B站定向", "emoji": "🎬", "category": "国内", "type": "Agent Reach", "desc": "40+ 女性/中女议题定向搜索（B站官方CLI）— 需本人登录"},
+    {"key": "weibo-reach", "name": "微博定向", "emoji": "🗣️", "category": "国内", "type": "浏览器渲染", "desc": "微博移动版「中年女性」议题搜索（免登录，需 agent 侧预渲染页面）"},
 ]
 
 # 各源采集脚本内对应的 last_seen 状态 key
