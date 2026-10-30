@@ -1899,7 +1899,7 @@ async function renderStats(container) {
     html += `<div class="trends-section" style="margin-top:24px"><h3>📡 数据源分布</h3>`;
     for (const [src, count] of Object.entries(stats.sources).sort((a, b) => b[1] - a[1])) {
       html += `<div class="trend-item">
-        <span class="trend-tag">${src}</span>
+        <span class="trend-tag">${SOURCE_LABELS[src] || src}</span>
         <div class="trend-bar"><div class="trend-fill" style="width:100%;background:var(--purple)"></div></div>
         <span class="trend-count">${count}</span>
       </div>`;
