@@ -4,10 +4,12 @@
 
 <table>
   <tr>
-    <td align="center"><img src="docs/screenshot-miniapp-dark.png" alt="日报页面 · 深色极简主题"><br><b>深色极简</b></td>
-    <td align="center"><img src="docs/screenshot-miniapp-light.png" alt="日报页面 · 暖色杂志主题"><br><b>暖色杂志</b></td>
+    <td align="center"><img src="docs/screenshot-miniapp-dark.png" alt="公众号选题页 · 深色极简主题"><br><b>深色极简</b></td>
+    <td align="center"><img src="docs/screenshot-miniapp-light.png" alt="公众号选题页 · 暖色杂志主题"><br><b>暖色杂志</b></td>
   </tr>
 </table>
+
+> 截图为「✍️ 公众号选题」专页：选题卡（核心观点 / 争议点 / 表达方式）、状态流按钮（想法→要写→写作中→已发布）、切面筛选、一键复制写稿指令。
 
 自媒体创作者的选题雷达——每天自动采集 **26 个国内外信息源**（微博热搜 / 知乎热榜 / B站 / 小红书 / 36氪 / GitHub / Product Hunt / V2EX…），由 AI 生成每日选题日报，帮你找到值得开口说的话题。
 
