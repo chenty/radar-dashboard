@@ -1,19 +1,21 @@
-# 📡 雷达日报 Dashboard（分享版）
+# 📡 雷达日报 · 自媒体创作者版
 
 > **🌗 双主题**：深色极简 / 暖色杂志，点顶栏 🌙/☀️ 按钮随时切换，也可用 `?theme=light` / `?theme=dark` 深链指定。
 
 <table>
   <tr>
-    <td align="center"><img src="docs/screenshot-miniapp-dark.png" alt="小程序机会页面 · 深色极简主题"><br><b>深色极简</b></td>
-    <td align="center"><img src="docs/screenshot-miniapp-light.png" alt="小程序机会页面 · 暖色杂志主题"><br><b>暖色杂志</b></td>
+    <td align="center"><img src="docs/screenshot-miniapp-dark.png" alt="日报页面 · 深色极简主题"><br><b>深色极简</b></td>
+    <td align="center"><img src="docs/screenshot-miniapp-light.png" alt="日报页面 · 暖色杂志主题"><br><b>暖色杂志</b></td>
   </tr>
 </table>
 
-独立开发者的信号雷达——每天自动采集 **19 个国内外信息源**（App Store 新应用 / GitHub 热榜 / 即刻圈子 / 36氪 / 少数派 / 开源中国 / V2EX / Product Hunt / trustmrr…），生成可浏览的可视化面板，帮你发现产品机会。
+自媒体创作者的选题雷达——每天自动采集 **26 个国内外信息源**（微博热搜 / 知乎热榜 / B站 / 小红书 / 36氪 / GitHub / Product Hunt / V2EX…），由 AI 生成每日选题日报，帮你找到值得开口说的话题。
 
 > 🎁 已内置示例数据，安装完打开就能看到完整效果。
 >
-> 📱 **本分享版默认偏重「微信小程序机会」**——这是作者自己正在追踪的方向，日报会专门生成「小程序机会」模块，面板也有独立的「📱 小程序机会」专页。如果你关注的是**海外产品**或**其他 App 产品**方向，改起来很简单，见下方 [🧭 自定义方向](#-自定义方向)。
+> ✍️ **本版本面向「公众号 · 女人 40 岁之后」**——这是作者正在运营的内容方向，日报会以「公众号选题」为最高优先级模块（Hook 标题 / 核心观点 / 真争议点 / 表达方式），面板有独立的选题专页。如果你关注**其他内容方向**（知识科普、亲子、职场……），改提示词即可，见 [🧭 自定义方向](#-自定义方向)。
+
+本项目基于开源项目 [susumr/radar-dashboard](https://github.com/susumr/radar-dashboard)（独立开发者方向）二次开发：保留了「采集 → 生成 → 展示」的管道架构与双主题面板，将信号源与日报生成全面改造为自媒体选题场景。
 
 ---
 
@@ -34,9 +36,9 @@ bash start.sh
 
 把下面这段话发给任意 AI 编程助手（Hermes / Cursor / Claude Code…），它会帮你完成全部安装：
 
-> 帮我安装并启动这个开源项目：https://github.com/susumr/radar-dashboard
+> 帮我安装并启动这个开源项目：https://github.com/chenty/radar-dashboard
 > 步骤：1) clone 到本地 2) 运行 install.sh 3) 运行 start.sh 4) 确认服务在 http://127.0.0.1:5080 能打开
-> 我关注微信小程序机会方向，顺便读一下 README 告诉我怎么配置 .env（DeepSeek Key 等）。
+> 我做「女人 40 岁之后」方向的公众号，顺便读一下 README 告诉我怎么配置 .env（DeepSeek Key 等）。
 
 如果你用的是 [Hermes Agent](https://hermes-agent.nousresearch.com)，还可以让它**全自动接管**：每天定时采集 → AI 生成日报 → 推送消息，详见文末「生成每日 AI 日报」方式 B。
 
@@ -44,28 +46,38 @@ bash start.sh
 
 | 页面 | 说明 |
 |------|------|
-| **日报时间线** | 每日 AI 精选日报（机会/赚钱案例/灵感/心法…） |
-| **📱 小程序机会** | ⭐ 本版核心：聚合所有小程序选题，关键词筛选 |
-| **📡 信号流** | tophub 式热榜：左侧 19 个平台，右侧紧凑榜单 |
+| **日报时间线** | 每日 AI 选题日报（公众号选题 / 机会 / 赚钱案例 / 心法…） |
+| **✍️ 公众号选题** | ⭐ 本版核心：聚合每日选题（标题 / 观点 / 争议点 / 表达建议） |
+| **📡 信号流** | tophub 式热榜：左侧 26 个平台，右侧紧凑榜单 |
 | **🔌 信息源管理** | 各平台接入状态 |
 | **⭐ 我的收藏** | 收藏单条信息 + 复制发给 AI 分析 |
 
+## 📡 数据源（26 个）
+
+| 类别 | 源 | 说明 |
+|------|-----|------|
+| **核心中文源** | weibo-hot 🔥 / zhihu-hot 🧩 / bili-hot 📺 / kr36-flash 📰 | 大众情绪、观点争议、生活方式趋势——公众号选题的富矿 |
+| **定向搜索**（需登录） | xiaohongshu / bilibili-reach / weibo-reach | 面向「女人 40 岁之后」的 4 组关键词定向搜索，挖热榜之外的长尾高共鸣内容 |
+| **海外/技术** | github ×3 / reddit / producthunt / trustmrr / indiehackers | AI 与科技背景信号 |
+
+> 定向搜索源通过 [Agent Reach](https://github.com/Panniantong/Agent-Reach) 接入（小红书/B站需本人扫码登录一次；微博走浏览器渲染免登录）。登录态过期时对应源静默缺失，不影响其他源。
+
 ## 🧭 自定义方向
 
-本版**偏重小程序**：日报里「小程序机会」模块是最高优先级（每天 3-5 条），面板左侧也有「📱 小程序机会」专页。这套逻辑在 **AI 生成日报时的提示词**里定义，不在代码里——所以想改方向，改提示词就行。
+本版**偏重「女人 40 岁之后」**：日报里「公众号选题」模块是最高优先级（每天 3-5 条），面板左侧也有专页。这套逻辑在 **AI 生成日报时的提示词**里定义，不在代码里——想换内容方向，改提示词就行。
 
 ### 方案 A：只改方向，不动代码（推荐）
 
-「日报生成提示词」决定 AI 输出哪些模块、偏重什么。有两处会用到它，**任选一处改**：
+「日报生成提示词」决定 AI 输出哪些模块、偏重什么：
 
 | 你的场景 | 改哪里 |
 |---------|--------|
-| 手动用 ChatGPT/Claude/DeepSeek 生成日报 | 改本 README「生成每日 AI 日报」里给 AI 的那段话（把"小程序机会"换成你的方向） |
-| 用 Hermes 自动生成（cron） | 改 `hermes-integration/hn-daily-radar-SKILL.md` 里 `Cron Prompt Template` 的「模块内容规则」 |
+| 手动用 ChatGPT/Claude/DeepSeek 生成日报 | 改本 README「生成每日 AI 日报」里给 AI 的那段话（把「女人 40 岁之后」换成你的方向） |
+| 用 Hermes 自动生成（cron） | 改 Hermes cron job 的 prompt（模块内容规则） |
 
-**想改成「海外产品方向」**：在提示词里把 `8️⃣ 微信小程序机会` 这一段删掉或改掉，把 `1️⃣ 今日机会` 的优先级提到最高，背景改成「出海 Web 应用独立开发者，关注全球市场」——采集脚本本身已经包含 trustmrr / IndieHackers / Product Hunt / Reddit 等海外源，信号天然够用。面板上看「📌 机会库」「💰 赚钱案例库」「💡 产品灵感库」即可（左侧「模块库」分组）。
+**想改成其他内容方向**：把提示词里的选题规则换成你的定位即可，例如「面向宝妈的育儿科普：每条选题含 Hook 标题 / 核心观点 / 争议点 / 表达建议」。同时把 `scripts/daily_signals.py` 里三个 `fetch_*_reach()` 的关键词列表换成你方向相关词。
 
-**想改成「App 产品方向」**：把提示词里的映射逻辑从「→ 小程序落地」改成「→ iOS/Android App 落地」。采集脚本已经接了 App Store 中/台/美/日/韩 5 个区的上新源，天然是 App 方向信号。
+**想恢复独立开发者方向**：本项目的上游 [susumr/radar-dashboard](https://github.com/susumr/radar-dashboard) 就是完整原版，直接用它更省事。
 
 ### 方案 B：增删数据源
 
@@ -74,34 +86,28 @@ bash start.sh
 | 加/删采集源 | `scripts/daily_signals.py`（采集逻辑）+ `app.py` 的 `SOURCE_META`（面板信息源管理页显示） |
 | 调整页面模块 | `templates/index.html`（前端，单文件） |
 
-采集源目前：App Store 中国/台湾/美国/日本/韩国、GitHub 总榜/JS榜/中文榜、即刻 AI探索站/AI讨论组/工程师、36氪、少数派、开源中国、V2EX、trustmrr、IndieHackers、Reddit、Product Hunt，共 19 源。
-
-### 想恢复原版（不偏重小程序）？
-
-把提示词里「8️⃣ 微信小程序机会（最高优先级）」段落删除即可，其余模块（机会/案例/灵感/增长/工具/踩坑/数据信号/心法）本来就是中性的。
-
 ## 🤖 给 AI Agent（Hermes / Cursor / Claude Code…）的阅读指南
 
 这个仓库是一个**「采集 → 生成 → 展示」三段式数据管道**，Agent 接手时按这个顺序读：
 
-1. **数据从哪来**：`scripts/daily_signals.py` 每天并行抓取 19 个源，原始信号存 `data/raw_signals/YYYY-MM-DD.json`（按平台分组，含 url）
+1. **数据从哪来**：`scripts/daily_signals.py` 每天并行抓取 26 个源，原始信号存 `data/raw_signals/YYYY-MM-DD.json`（按平台分组，含 url）。三个 `fetch_*_reach()` 定向源依赖 Agent Reach 登录态 / 浏览器渲染缓存（`~/.hermes/cache/weibo_reach_last_page.html`，1 小时有效，缺失时自动跳过）。
 2. **日报怎么生成**：把采集到的信号交给 LLM，按**日报 JSON 格式**整理成 `data/reports/YYYY-MM-DD.json`。核心结构：
    ```json
-   { "date": "2026-08-02", "sources": {"v2ex": 4, ...},
-     "modules": { "opportunities": [...], "moneyCases": [...], "miniProgram": [...], "dailyWisdom": {...} } }
+   { "date": "2026-10-30", "sources": {"weibo-hot": 40, ...},
+     "modules": { "opportunities": [...], "moneyCases": [...], "publicAccountTopics": [...], "dailyWisdom": {...} } }
    ```
-   「小程序机会」就是 `modules.miniProgram` 这个数组——面板专页直接读它，跨日期自动聚合。
-3. **怎么展示**：`app.py`（Flask 后端，只读 JSON 出 REST API）+ `templates/index.html`（单文件前端，hash 路由 `#/miniapp` 等）。后端无数据库，纯文件即数据，改 JSON 就能看到效果。
-4. **要自动化的 Agent**：读 `hermes-integration/HERMES-INTEGRATION.md`（配置 Hermes 全自动采集+生成+推送的完整步骤），skill 定义在 `hermes-integration/hn-daily-radar-SKILL.md`（含日报模板、cron prompt、JSON schema、故障排查）。
-5. **Key 约定**：脚本按 环境变量 → 项目 `.env` → `~/.hermes/.env`（Hermes 用户的 Key，自动复用）→ `~/.env` 的顺序读 `DEEPSEEK_API_KEY`；`TRUSTMRR_API_KEY` / `PH_TOKEN` / `REDDIT_*` 只从环境变量和项目 `.env` 读。给 Hermes 用户配置时，DeepSeek Key 不用重复填。
+   「公众号选题」就是 `modules.publicAccountTopics` 数组（字段：title / signal / corePoint / controversy / audience / expression / relatedSignal）——面板专页直接读它，跨日期自动聚合。
+3. **怎么展示**：`app.py`（Flask 后端，只读 JSON 出 REST API）+ `templates/index.html`（单文件前端，双主题，hash 路由）。后端无数据库，纯文件即数据。
+4. **要自动化的 Agent**：读 `hermes-integration/HERMES-INTEGRATION.md`（配置 Hermes 全自动采集+生成+推送的完整步骤）。
+5. **Key 约定**：脚本按 环境变量 → 项目 `.env` → `~/.hermes/.env`（Hermes 用户的 Key，自动复用）的顺序读 `DEEPSEEK_API_KEY`；`TRUSTMRR_API_KEY` / `PH_TOKEN` / `REDDIT_*` 只从环境变量和项目 `.env` 读。
 
-**Agent 要做的日常操作**：加数据源（改 daily_signals.py + SOURCE_META）、改日报风格（改 skill 里的 prompt 模板）、修展示（改 index.html）、跑采集（`python3 scripts/daily_signals.py`）。
+**Agent 要做的日常操作**：加数据源（改 daily_signals.py + SOURCE_META）、改日报风格（改 cron prompt 模板）、修展示（改 index.html）、跑采集（`venv/bin/python scripts/daily_signals.py`）。
 
 ## 🔄 每日数据采集
 
 ```bash
-# 手动采集一次（约 20 秒，抓取 19 个平台最新信号）
-python3 scripts/daily_signals.py
+# 手动采集一次（约 2 分钟，26 个源）
+venv/bin/python scripts/daily_signals.py
 
 # 自动采集：加到系统定时任务（每天 08:45）
 crontab -e
@@ -119,19 +125,15 @@ crontab -e
 
 ### 方式 A：用任意 AI 工具（免费，无需额外配置）
 
-1. 先跑采集：`python3 scripts/daily_signals.py`
+1. 先跑采集：`venv/bin/python scripts/daily_signals.py`
 2. 把终端输出的信号列表**复制**给任何 AI（ChatGPT/Claude/DeepSeek）
-3. 让 AI 按下面的格式整理成日报 JSON（**想改方向？把这里的话也改掉，见「自定义方向」**）：
-   > 你是独立开发者的信号雷达。从上面信号里精选最有价值的 3-5 条，输出：1️⃣ 今日机会 2️⃣ 赚钱案例 3️⃣ 产品灵感 4️⃣ 增长技巧 5️⃣ 工具 6️⃣ 踩坑 7️⃣ 数据信号 8️⃣ **微信小程序机会（最高优先级，3-5 条：把当天信号映射成国内微信小程序能落地的选题，含标题/启发/建议/关键词/用户需求/痛点/做法/关联信号）** 🎯 今日心法。
-4. 把 AI 返回的 JSON 保存为 `data/reports/2026-08-02.json`（JSON 格式见上「Agent 阅读指南」，或直接让 AI 按这个结构输出）
+3. 让 AI 按下面的格式整理成日报 JSON（**想改方向？把这里的话也改掉**）：
+   > 你是「女人 40 岁之后」公众号的每日选题雷达。从信号里精选，输出：1️⃣ 今日机会 2️⃣ 赚钱案例 3️⃣ 增长技巧 4️⃣ 数据信号 5️⃣ **公众号选题（最高优先级，3-5 条：Hook 标题 / 信号来源 / 核心观点 / 真争议点（两面性）/ 40+ 女性读者画像 / 表达方式建议 / 关联信号，覆盖自我成长/健康/财务/关系/心态/生活方式不同切面，不鸡汤、不泛科普）** 🎯 今日心法。
+4. 把 AI 返回的 JSON 保存为 `data/reports/{日期}.json`（结构见上「Agent 阅读指南」）
 
 ### 方式 B：接入 Hermes Agent（完整自动化）
 
-雷达日报原生跑在 [Hermes Agent](https://hermes-agent.nousresearch.com) 上，配置 cron 后每天 08:45 自动采集 → AI 生成日报 → 推送到 Telegram。
-
-**如果朋友有 Hermes**：把 `hermes-integration/HERMES-INTEGRATION.md` 发给 Hermes 对话，让它自动配置（采集脚本注册 + skill 导入 + cron 创建）。详见该文件。
-
-**从 GitHub 拿到的用户**：仓库在 https://github.com/susumr/radar-dashboard，下载解压后即可开始。
+雷达日报原生跑在 [Hermes Agent](https://hermes-agent.nousresearch.com) 上，配置 cron 后每天 08:45 自动采集 → AI 生成日报 → 推送到会话。配置步骤见 `hermes-integration/HERMES-INTEGRATION.md`。
 
 ## 🔧 配置说明（.env）
 
@@ -140,32 +142,31 @@ crontab -e
 | Key | 作用 | 获取 | 优先级 |
 |-----|------|------|--------|
 | `DEEPSEEK_API_KEY` | 英文信号自动翻译中文 | https://platform.deepseek.com/ | ⭐ 推荐 |
-| `TRUSTMRR_API_KEY` | 已验证收入创业公司数据（MRR/增长） | https://trustmrr.com/ | ⭐ 推荐 |
+| `TRUSTMRR_API_KEY` | 已验证收入创业公司数据 | https://trustmrr.com/ | 🟢 可选 |
 | `PH_TOKEN` | Product Hunt 每日新品 | https://www.producthunt.com/v2/oauth/applications | 🟢 可选 |
 | `REDDIT_*` | Reddit 信号 | — | ⚪ 可不配（易风控） |
 
-> 💡 **用了 Hermes 就不用重复配 DeepSeek Key**：采集脚本会自动读取 `~/.hermes/.env` 里的 `DEEPSEEK_API_KEY`（Hermes 自己的模型配置），无需在项目 `.env` 里再填一遍。只有不用 Hermes 时才需要手动配置。
+> 💡 **用了 Hermes 就不用重复配 DeepSeek Key**：采集脚本会自动读取 `~/.hermes/.env` 里的 `DEEPSEEK_API_KEY`，无需在项目 `.env` 里再填一遍。
 >
-> ⚪ **Reddit 建议不配**：Reddit 对数据中心 IP 风控严格，容易 403/封 IP，配置后也未必稳定。不配也不影响其他 18 个源，等真遇到需要再说。
+> ⚪ **Reddit 建议不配**：Reddit 对数据中心 IP 风控严格，不配也不影响其他源。
 
 ## 🗂️ 目录结构
 
 ```
 radar-dashboard/
 ├── app.py                  # Web 后端（REST API，只读 JSON）
-├── templates/index.html    # 前端页面（单文件，hash 路由）
+├── templates/index.html    # 前端页面（单文件，双主题，hash 路由）
 ├── scripts/
-│   ├── daily_signals.py    # 数据采集脚本（19 源）
+│   ├── daily_signals.py    # 数据采集脚本（26 源，含 3 个 agent-reach 定向源）
+│   ├── weibo_render_urls.py        # 微博定向搜索 URL 列表
+│   ├── weibo_reach_search.py       # 微博采集辅助
 │   └── screenshot.py       # 生成 README 截图（Playwright）
-├── docs/
-│   ├── screenshot-miniapp-dark.png   # README 截图（小程序机会 · 深色主题）
-│   ├── screenshot-miniapp-light.png  # README 截图（小程序机会 · 亮色主题）
-│   └── wechat-qrcode.png       # 公众号二维码（README 底部）
+├── docs/                   # 截图等静态资源
 ├── data/
 │   ├── reports/            # 日报 JSON
 │   ├── raw_signals/        # 原始信号 JSON
 │   └── favorites.json      # 你的收藏
-├── hermes-integration/     # Hermes 自动化配置（HERMES-INTEGRATION.md + skill）
+├── hermes-integration/     # Hermes 自动化配置
 ├── requirements.txt
 ├── install.sh              # 一键安装
 ├── start.sh                # 启动
@@ -175,13 +176,13 @@ radar-dashboard/
 ## ❓ 常见问题
 
 **打开后只有示例数据？**
-内置的 `2026-08-02.json`（日报 + 原始信号）是示例数据，安装完就能看效果。你采集/生成的数据会自动追加，按日期区分。
+内置的 `2026-08-02.json` 是示例数据。你采集/生成的数据会自动追加，按日期区分。
 
-**示例数据会被覆盖吗？**
-如果你某天也采集/生成了 2026-08-02 的日报，会覆盖示例（正常，说明你开始有自己的数据了）。
+**小红书 / B站定向搜索没数据？**
+这两个源需要本人扫码登录（Agent Reach 专用浏览器）：`agent-reach login xiaohongshu` / `agent-reach login bilibili`。登录态过期时源会静默缺失，重新登录即恢复。微博源需要 agent 侧先渲染页面（详见 Agent 阅读指南）。
 
 **没有 DeepSeek Key 会怎样？**
-App Store 美国/日本/韩国、GitHub、Product Hunt 等英文内容不翻译，显示原文。其他功能正常。如果你装了 Hermes 且已配置 Key，脚本会自动读取 `~/.hermes/.env`，无需手动填。
+英文内容不翻译，显示原文。其他功能正常。
 
 **数据存在哪？**
 全部在本机 `data/` 目录，纯 JSON 文本，方便备份迁移。
@@ -189,23 +190,8 @@ App Store 美国/日本/韩国、GitHub、Product Hunt 等英文内容不翻译�
 **想换端口？**
 `start.sh` 里把 5080 改成你想要的端口。
 
-**想重新生成 README 截图？**
-```bash
-# 需要先启动服务（bash start.sh），并装好 playwright：
-venv/bin/pip install playwright
-# 双主题各截一张（页面支持 ?theme= 深链）
-venv/bin/python scripts/screenshot.py docs/screenshot-miniapp-dark.png "?theme=dark#/miniapp"
-venv/bin/python scripts/screenshot.py docs/screenshot-miniapp-light.png "?theme=light#/miniapp"
-```
-
 ---
 
-## 📱 联系作者
+## 📄 来源与致谢
 
-我是独立开发者 susumr，这个雷达日报是我的日常工具，顺手开源分享。如果你也在做独立开发 / 小程序，欢迎关注我的公众号交流：
-
-<p align="center">
-  <img src="docs/wechat-qrcode.png" alt="公众号二维码" width="480">
-</p>
-
-> 🔍 微信搜索框输入公众号名称即可找到（搜一搜联合传播样式）。需要交流、合作或有问题反馈，扫码或搜索关注后留言即可。
+本项目基于 [susumr/radar-dashboard](https://github.com/susumr/radar-dashboard)（原作者是独立开发者，面向小程序/出海产品机会发现）二次开发，感谢其开源的「采集 → 生成 → 展示」管道架构与面板设计。本版本将场景改造为**自媒体内容选题**，信号源、日报 prompt 与模块结构均有较大改动，与上游不互相兼容。
