@@ -734,35 +734,15 @@ body {
     </div>
     <div class="nav-section">
       <div class="nav-section-title">模块库</div>
-      <a class="nav-item" href="#/module/opportunities" data-route="module-opportunities">
+      <a class="nav-item" href="#/module/topics" data-route="module-topics">
         <span class="dot" style="background:var(--green)"></span>
-        <span>机会库</span>
-        <span class="badge" data-badge="opportunities">0</span>
-      </a>
-      <a class="nav-item" href="#/module/money-cases" data-route="module-money-cases">
-        <span class="dot" style="background:var(--orange)"></span>
-        <span>赚钱案例库</span>
-        <span class="badge" data-badge="money-cases">0</span>
-      </a>
-      <a class="nav-item" href="#/module/inspirations" data-route="module-inspirations">
-        <span class="dot" style="background:var(--purple)"></span>
-        <span>产品灵感库</span>
-        <span class="badge" data-badge="inspirations">0</span>
-      </a>
-      <a class="nav-item" href="#/module/growth" data-route="module-growth">
-        <span class="dot" style="background:var(--teal)"></span>
-        <span>增长技巧库</span>
-        <span class="badge" data-badge="growth">0</span>
+        <span>公众号选题库</span>
+        <span class="badge" data-badge="topics">0</span>
       </a>
       <a class="nav-item" href="#/module/signals" data-route="module-signals">
         <span class="dot" style="background:var(--accent)"></span>
         <span>数据信号库</span>
         <span class="badge" data-badge="signals">0</span>
-      </a>
-      <a class="nav-item" href="#/module/topics" data-route="module-topics">
-        <span class="dot" style="background:var(--green)"></span>
-        <span>公众号选题库</span>
-        <span class="badge" data-badge="topics">0</span>
       </a>
       <a class="nav-item" href="#/module/wisdom" data-route="module-wisdom">
         <span class="dot" style="background:var(--yellow)"></span>
@@ -1179,13 +1159,7 @@ async function render() {
       await renderDaily(content, parts[1]);
     } else if (parts[0] === 'module' && parts[1]) {
       const labels = {
-        'opportunities': '📌 机会库',
-        'money-cases': '💰 赚钱案例库',
-        'inspirations': '💡 产品灵感库',
-        'growth': '📈 增长技巧库',
-        'tools': '🔧 工具库',
-        'pitfalls': '⚠️ 踩坑库',
-        'signals': '📊 数据信号库',
+        'signals': '📊 素材信号库',
         'topics': '✍️ 公众号选题库',
         'wisdom': '🧠 心法库',
       };
@@ -1257,17 +1231,18 @@ async function renderDaily(container, dateStr) {
       </div>
     </div>`;
 
-  // Modules
+  // Modules —— 日报详情渲染顺序（创作者版：信号→选题→心法；旧模块数据仍兼容显示在末尾）
   const moduleOrder = [
+    { key: 'dataSignals', emoji: '📊', label: '今日素材信号' },
+    { key: 'publicAccountTopics', emoji: '✍️', label: '公众号选题 · 女人40岁之后' },
+    { key: 'dailyWisdom', emoji: '🧠', label: '今日心法' },
+    // 独立开发者遗留模块（cron 已不再生成，历史数据仍可见）
     { key: 'opportunities', emoji: '📌', label: '今日机会' },
     { key: 'moneyCases', emoji: '💰', label: '今日赚钱案例' },
     { key: 'productInspirations', emoji: '💡', label: '今日产品灵感' },
     { key: 'growthTips', emoji: '📈', label: '今日增长技巧' },
     { key: 'tools', emoji: '🔧', label: '今日工具' },
     { key: 'pitfalls', emoji: '⚠️', label: '今日踩坑' },
-    { key: 'dataSignals', emoji: '📊', label: '今日数据信号' },
-    { key: 'publicAccountTopics', emoji: '✍️', label: '公众号选题 · 女人40岁之后' },
-    { key: 'dailyWisdom', emoji: '🧠', label: '今日心法' },
   ];
 
   for (const mod of moduleOrder) {

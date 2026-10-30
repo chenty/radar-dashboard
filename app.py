@@ -71,13 +71,14 @@ def get_report(date_str):
 def get_module(module_name):
     """跨日期聚合指定模块的全部内容"""
     module_map = {
+        'signals': 'dataSignals',
+        # 独立开发者遗留模块：JSON 里如仍存在可经旧路由访问，面板不再展示
         'opportunities': 'opportunities',
         'money-cases': 'moneyCases',
         'inspirations': 'productInspirations',
         'growth': 'growthTips',
         'tools': 'tools',
         'pitfalls': 'pitfalls',
-        'signals': 'dataSignals',
         'topics': 'publicAccountTopics',
         'mini-program': 'publicAccountTopics',  # 旧路由别名（兼容已保存的收藏/书签）
         'wisdom': 'dailyWisdom',
