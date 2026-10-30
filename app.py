@@ -78,7 +78,8 @@ def get_module(module_name):
         'tools': 'tools',
         'pitfalls': 'pitfalls',
         'signals': 'dataSignals',
-        'mini-program': 'publicAccountTopics',
+        'topics': 'publicAccountTopics',
+        'mini-program': 'publicAccountTopics',  # 旧路由别名（兼容已保存的收藏/书签）
         'wisdom': 'dailyWisdom',
     }
     key = module_map.get(module_name)
@@ -435,7 +436,7 @@ def add_favorite():
 
     item = {
         'id': fav_id,
-        'type': payload.get('type', 'signal'),        # signal / report_item / miniapp
+        'type': payload.get('type', 'signal'),        # signal / report_item / topics（旧收藏数据可能存为 'miniapp'）
         'title': title,
         'title_cn': payload.get('title_cn', ''),
         'name_cn': payload.get('name_cn', ''),

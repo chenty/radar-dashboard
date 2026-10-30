@@ -480,34 +480,34 @@ body {
   color: var(--green, #22c55e);
 }
 /* ─── 小程序机会专页 ─── */
-.mp-grid {
+.topic-grid {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 12px;
 }
-.mp-card {
+.topic-card {
   background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
   padding: 14px 16px; transition: border-color .15s, transform .15s, box-shadow .15s; display: flex; flex-direction: column; gap: 8px;
 }
-.mp-card:hover { border-color: var(--green); transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,.15); }
-.mp-head { display: flex; align-items: flex-start; gap: 8px; }
-.mp-title { font-size: .95rem; font-weight: 700; color: var(--text); flex: 1; line-height: 1.4; }
-.mp-date { font-size: .66rem; color: var(--text-secondary); background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 2px 8px; flex-shrink: 0; }
-.mp-kw { display: flex; flex-wrap: wrap; gap: 4px; }
-.mp-kw span {
+.topic-card:hover { border-color: var(--green); transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,.15); }
+.topic-head { display: flex; align-items: flex-start; gap: 8px; }
+.topic-title { font-size: .95rem; font-weight: 700; color: var(--text); flex: 1; line-height: 1.4; }
+.topic-date { font-size: .66rem; color: var(--text-secondary); background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 2px 8px; flex-shrink: 0; }
+.topic-kw { display: flex; flex-wrap: wrap; gap: 4px; }
+.topic-kw span {
   font-size: .66rem; color: var(--green); background: var(--ok-bg);
   border: 1px solid var(--ok-bg); border-radius: 8px; padding: 1px 8px;
 }
-.mp-line { font-size: .75rem; color: var(--text-secondary); line-height: 1.5; }
-.mp-line b { color: var(--text); font-weight: 600; }
-.mp-signal {
+.topic-line { font-size: .75rem; color: var(--text-secondary); line-height: 1.5; }
+.topic-line b { color: var(--text); font-weight: 600; }
+.topic-signal {
   font-size: .68rem; color: var(--accent); opacity: .85; line-height: 1.4;
   border-top: 1px dashed var(--border); padding-top: 6px;
 }
-.mp-filter {
+.topic-filter {
   background: var(--surface); border: 1px solid var(--border); color: var(--text);
   border-radius: 8px; padding: 7px 14px; font-size: .8rem; width: 260px; font-family: inherit;
   margin-bottom: 14px; outline: none;
 }
-.mp-filter:focus { border-color: var(--green); }
+.topic-filter:focus { border-color: var(--green); }
 .mp-empty { padding: 40px; text-align: center; color: var(--text-secondary); font-size: .85rem; }
 
 /* ─── 收藏按钮 ─── */
@@ -547,7 +547,7 @@ body {
 }
 .fav-tag.signal { background: var(--info-bg); color: var(--info-text); }
 .fav-tag.report_item { background: var(--warn-bg); color: var(--warn-text); }
-.fav-tag.miniapp { background: var(--ok-bg); color: var(--ok-text); }
+.fav-tag.topics, .fav-tag.miniapp { background: var(--ok-bg); color: var(--ok-text); }
 .cross-day-list { display: flex; flex-direction: column; gap: 8px; }
 .cross-day-item {
   display: flex; gap: 14px; align-items: flex-start;
@@ -711,7 +711,7 @@ body {
         <span class="dot" style="background:var(--accent)"></span>
         <span>日报时间线</span>
       </a>
-      <a class="nav-item" href="#/miniapp" data-route="miniapp">
+      <a class="nav-item" href="#/topics" data-route="topics">
         <span class="dot" style="background:var(--green)"></span>
         <span>✍️ 公众号选题</span>
       </a>
@@ -759,10 +759,10 @@ body {
         <span>数据信号库</span>
         <span class="badge" data-badge="signals">0</span>
       </a>
-      <a class="nav-item" href="#/module/mini-program" data-route="module-mini-program">
+      <a class="nav-item" href="#/module/topics" data-route="module-topics">
         <span class="dot" style="background:var(--green)"></span>
         <span>公众号选题库</span>
-        <span class="badge" data-badge="mini-program">0</span>
+        <span class="badge" data-badge="topics">0</span>
       </a>
       <a class="nav-item" href="#/module/wisdom" data-route="module-wisdom">
         <span class="dot" style="background:var(--yellow)"></span>
@@ -830,13 +830,13 @@ async function api(path) {
 const FAV_TYPE_LABELS = {
   'signal': '📡 信号',
   'report_item': '📋 日报模块',
-  'miniapp': '✍️ 公众号选题',
+  'topics': '✍️ 公众号选题',
 };
 
 // 收藏页描述文本（按类型展示完整字段）
 function favDescText(f) {
   const r = f.raw || {};
-  if (f.type === 'miniapp') {
+  if (f.type === 'topics') {
     const parts = [];
     if (r.inspiration) parts.push(`💡 启发：${r.inspiration}`);
     if (r.suggestion) parts.push(`🛠 建议：${r.suggestion}`);
@@ -902,11 +902,11 @@ async function renderFavorites(container) {
       ).join('')}
     </div>
     <label class="visually-hidden" for="favFilter">按标题/内容筛选收藏</label>
-    <input class="mp-filter" id="favFilter" placeholder="🔍 按标题/内容筛选…" oninput="filterFavorites(this.value)">
+    <input class="topic-filter" id="favFilter" placeholder="🔍 按标题/内容筛选…" oninput="filterFavorites(this.value)">
     <div id="favList">`;
 
   // 按类型分组展示
-  const order = ['miniapp', 'signal', 'report_item'];
+  const order = ['topics', 'signal', 'report_item'];
   for (const t of order) {
     const list = favs.filter(f => f.type === t);
     if (!list.length) continue;
@@ -1015,7 +1015,7 @@ function buildCopyText(obj) {
   lines.push(`【来源】${obj.source_label || obj.source || ''}${obj.date ? ' | ' + obj.date : ''}`);
   lines.push(`【标题】${obj.title_cn || obj.name_cn || obj.title || ''}`);
 
-  if (obj.type === 'miniapp') {
+  if (obj.type === 'topics') {
     // 公众号选题：全字段导出
     const fields = [
       ['启发', raw.signal],
@@ -1159,9 +1159,9 @@ async function render() {
     if (parts.length === 0 || parts[0] === '') {
       title.textContent = '📡 日报时间线';
       await renderTimeline(content);
-    } else if (parts[0] === 'miniapp') {
+    } else if (parts[0] === 'topics') {
       title.textContent = '✍️ 公众号选题';
-      await renderMiniProgram(content);
+      await renderTopics(content);
     } else if (parts[0] === 'stats') {
       title.textContent = '📊 统计与趋势';
       await renderStats(content);
@@ -1186,7 +1186,7 @@ async function render() {
         'tools': '🔧 工具库',
         'pitfalls': '⚠️ 踩坑库',
         'signals': '📊 数据信号库',
-        'mini-program': '✍️ 公众号选题库',
+        'topics': '✍️ 公众号选题库',
         'wisdom': '🧠 心法库',
       };
       title.textContent = labels[parts[1]] || '模块视图';
@@ -1684,9 +1684,9 @@ async function renderSources(container) {
 const FACETS = ['自我成长', '健康与身体', '财务与搞钱', '关系与家庭', '心态与情绪', '生活方式'];
 const TOPIC_STAGES = { idea: '💡 想法', picked: '📌 要写', drafting: '✏️ 写作中', published: '✅ 已发布' };
 
-async function renderMiniProgram(container) {
+async function renderTopics(container) {
   const [items, statuses] = await Promise.all([
-    api('/modules/mini-program'),
+    api('/modules/topics'),
     api('/topics/status').catch(() => ({})),
   ]);
   window._topicStatuses = statuses || {};
@@ -1730,22 +1730,22 @@ async function renderMiniProgram(container) {
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0">
       ${Object.entries(TOPIC_STAGES).map(([k, label]) => `<span style="font-size:.72rem;color:var(--muted-foreground)">${label} <b style="color:var(--foreground)">${stageCount[k] || 0}</b></span>`).join(' · ')}
     </div>
-    <label class="visually-hidden" for="mpFilter">按关键词/标题筛选公众号选题</label>
-    <input class="mp-filter" id="mpFilter" placeholder="🔍 按关键词/标题筛选…" oninput="filterMiniProgram(this.value)">
-    <div id="mpGrid" class="mp-grid">`;
+    <label class="visually-hidden" for="topicFilter">按关键词/标题筛选公众号选题</label>
+    <input class="topic-filter" id="topicFilter" placeholder="🔍 按关键词/标题筛选…" oninput="filterTopics(this.value)">
+    <div id="topicGrid" class="topic-grid">`;
 
   for (const item of items) {
-    html += mpCardHtml(item);
+    html += topicCardHtml(item);
   }
   html += `</div>`;
   container.innerHTML = html;
   markFavorites(container);
 
   // 关键词过滤
-  window.filterMiniProgram = function(q) {
-    const grid = document.getElementById('mpGrid');
+  window.filterTopics = function(q) {
+    const grid = document.getElementById('topicGrid');
     const kw = q.trim().toLowerCase();
-    grid.querySelectorAll('.mp-card').forEach(card => {
+    grid.querySelectorAll('.topic-card').forEach(card => {
       const text = card.dataset.search || '';
       const facetOk = !window._activeFacet || (card.dataset.facet || '') === window._activeFacet;
       card.style.display = facetOk && (!kw || text.includes(kw)) ? '' : 'none';
@@ -1757,8 +1757,8 @@ async function renderMiniProgram(container) {
     document.querySelectorAll('.facet-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     window._activeFacet = btn.dataset.facet || '';
-    const input = document.getElementById('mpFilter');
-    if (input) window.filterMiniProgram(input.value);
+    const input = document.getElementById('topicFilter');
+    if (input) window.filterTopics(input.value);
   };
 }
 
@@ -1784,7 +1784,7 @@ async function setTopicStage(key, stage) {
   });
 }
 
-function mpCardHtml(item) {
+function topicCardHtml(item) {
   const searchText = [item.title, item.signal, item.corePoint, item.controversy,
     item.audience, item.expression, item.relatedSignal]
     .join(' ').toLowerCase();
@@ -1792,8 +1792,8 @@ function mpCardHtml(item) {
   const st = (window._topicStatuses || {})[key] || {};
   const facet = st.facet || item.facet || '';
   const stage = st.stage || 'idea';
-  const favObj = {type: 'miniapp', title: item.title || '未命名选题',
-    url: '', source: 'miniapp', source_label: '✍️ 公众号选题', date: item.date || '',
+  const favObj = {type: 'topics', title: item.title || '未命名选题',
+    url: '', source: 'topics', source_label: '✍️ 公众号选题', date: item.date || '',
     desc: (item.corePoint || '') + ' | ' + (item.controversy || ''), raw: item};
   // 写稿 prompt：把整张选题卡变成可直接发给 AI 的成稿指令
   const draftPrompt = '请以「' + (item.title || '') + '」为题写一篇公众号文章，面向' + (item.audience || '40+女性读者') +
@@ -1801,21 +1801,21 @@ function mpCardHtml(item) {
     (item.controversy || '') + '。表达要求：' + (item.expression || '') +
     '。开头用一个真实感场景切入，不鸡汤、不泛科普，1200-1800字。';
   return `
-    <div class="mp-card" data-search="${escapeHtml(searchText)}" data-facet="${escapeHtml(facet)}" data-topic-key="${key}">
-      <div class="mp-head">
-        <span class="mp-title">✍️ ${escapeHtml(item.title || '未命名选题')}</span>
+    <div class="topic-card" data-search="${escapeHtml(searchText)}" data-facet="${escapeHtml(facet)}" data-topic-key="${key}">
+      <div class="topic-head">
+        <span class="topic-title">✍️ ${escapeHtml(item.title || '未命名选题')}</span>
         ${favBtnHtml(favObj, 'large')}
         ${copyBtnHtml(favObj, 'large')}
-        <span class="mp-date">${item.date}</span>
+        <span class="topic-date">${item.date}</span>
       </div>
-      ${facet ? `<div class="mp-line"><b>切面：</b><span class="facet-tag">${escapeHtml(facet)}</span></div>` : ''}
-      ${item.corePoint ? `<div class="mp-line"><b>核心观点：</b>${escapeHtml(item.corePoint)}</div>` : ''}
-      ${item.controversy ? `<div class="mp-line" style="color:var(--orange)"><b>🔥 争议点：</b>${escapeHtml(item.controversy)}</div>` : ''}
-      ${item.audience ? `<div class="mp-line"><b>目标读者：</b>${escapeHtml(item.audience)}</div>` : ''}
-      ${item.expression ? `<div class="mp-line"><b>表达方式：</b>${escapeHtml(item.expression)}</div>` : ''}
-      ${item.signal ? `<div class="mp-line"><b>启发：</b>${escapeHtml(item.signal)}</div>` : ''}
-      ${item.relatedSignal ? `<div class="mp-signal">📡 ${escapeHtml(item.relatedSignal)}</div>` : ''}
-      <div class="mp-actions" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;align-items:center">
+      ${facet ? `<div class="topic-line"><b>切面：</b><span class="facet-tag">${escapeHtml(facet)}</span></div>` : ''}
+      ${item.corePoint ? `<div class="topic-line"><b>核心观点：</b>${escapeHtml(item.corePoint)}</div>` : ''}
+      ${item.controversy ? `<div class="topic-line" style="color:var(--orange)"><b>🔥 争议点：</b>${escapeHtml(item.controversy)}</div>` : ''}
+      ${item.audience ? `<div class="topic-line"><b>目标读者：</b>${escapeHtml(item.audience)}</div>` : ''}
+      ${item.expression ? `<div class="topic-line"><b>表达方式：</b>${escapeHtml(item.expression)}</div>` : ''}
+      ${item.signal ? `<div class="topic-line"><b>启发：</b>${escapeHtml(item.signal)}</div>` : ''}
+      ${item.relatedSignal ? `<div class="topic-signal">📡 ${escapeHtml(item.relatedSignal)}</div>` : ''}
+      <div class="topic-actions" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;align-items:center">
         ${Object.entries(TOPIC_STAGES).map(([k, label]) =>
           `<button class="stage-btn${stage === k ? ' active' : ''}" data-stage="${k}" onclick="setTopicStage('${key}', '${k}')">${label}</button>`).join('')}
         <button class="stage-btn" title="复制写稿指令，粘贴给任意 AI 即可出初稿" onclick="navigator.clipboard.writeText(${JSON.stringify(draftPrompt).replace(/"/g, '&quot;')}); this.textContent='✓ 已复制'; setTimeout(()=>this.textContent='📝 复制写稿指令', 1500)">📝 复制写稿指令</button>
@@ -1932,7 +1932,7 @@ const moduleLabels = {
   'tools': '🔧 今日工具 — 跨日聚合',
   'pitfalls': '⚠️ 今日踩坑 — 跨日聚合',
   'signals': '📊 今日数据信号 — 跨日聚合',
-  'mini-program': '✍️ 公众号选题 — 跨日聚合',
+  'topics': '✍️ 公众号选题 — 跨日聚合',
   'wisdom': '🧠 今日心法 — 跨日聚合',
 };
 
@@ -1949,7 +1949,7 @@ async function updateTopStats() {
         'opportunities': 'opportunities', 'moneyCases': 'money-cases',
         'productInspirations': 'inspirations', 'growthTips': 'growth',
         'tools': 'tools', 'pitfalls': 'pitfalls',
-        'dataSignals': 'signals', 'publicAccountTopics': 'mini-program',
+        'dataSignals': 'signals', 'publicAccountTopics': 'topics',
         'dailyWisdom': 'wisdom',
       }[mod];
       if (badgeKey) {

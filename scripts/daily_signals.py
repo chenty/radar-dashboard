@@ -1087,15 +1087,37 @@ def fetch_weibo_reach():
     queries = ["中年女性 焦虑", "40岁 婚姻", "中年女性 健康", "40岁 独立"]
     seen_ids = set()
 
+    def _extract_div_block(html_seg: str, start_tag: str = '<div class="weibo-text">') -> str:
+        """按 div 平衡计数抽取完整块（非贪婪正则会把嵌套 div 截断在第一个 </div>）"""
+        i = html_seg.find(start_tag)
+        if i < 0:
+            return ""
+        depth = 1
+        j = i + len(start_tag)
+        last_close = -1
+        while j < len(html_seg) and depth > 0:
+            nxt_open = html_seg.find('<div', j)
+            nxt_close = html_seg.find('</div>', j)
+            if nxt_close < 0:
+                break
+            if 0 <= nxt_open < nxt_close:
+                depth += 1
+                j = nxt_open + 4
+            else:
+                depth -= 1
+                last_close = nxt_close
+                j = nxt_close + 6
+        return html_seg[i + len(start_tag): last_close]
+
     def _parse_cards(raw_html: str):
         """从渲染页 HTML 按卡片切块，抽取正文 + permalink + 发布时间"""
         out = []
         blocks = re.split(r'<div class="card-wrap">', raw_html)
         for b in blocks[1:]:
-            tm = re.search(r'<div class="weibo-text">(.*?)</div>', b, re.S)
-            if not tm:
+            inner = _extract_div_block(b)
+            if not inner:
                 continue
-            text = re.sub(r"<[^>]+>", "", tm.group(1))
+            text = re.sub(r"<[^>]+>", "", inner)
             text = re.sub(r"\s+", " ", text).strip()
             if len(text) < 15:
                 continue
