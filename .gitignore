@@ -32,3 +32,4 @@ data/raw_signals/*.json
 .vscode/
 data/quote_harvest/
 data/drafts/
+data/raw_signals/2026-08-02.json
