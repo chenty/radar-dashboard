@@ -1625,6 +1625,113 @@ def fetch_xueqiu_reach():
     return items
 
 
+
+
+# ============================================================
+# SOURCE: 女人40岁之后方向 — 网易新闻热榜 / 知乎日报 / 百度热搜
+# ============================================================
+
+NETEASE_HOT_API = "https://m.163.com/fe/api/hot/news/flow"
+ZHIHU_DAILY_API = "https://daily.zhihu.com/api/4/news/latest"
+BAIDU_BOARD_URL = "https://top.baidu.com/board?tab=realtime"
+
+
+def fetch_netease_hot():
+    """网易新闻热榜 — 社会新闻里女性议题浓度最高（婚姻/安全/家暴案件）"""
+    items = []
+    try:
+        r = requests.get(NETEASE_HOT_API, headers={"User-Agent": UA_BROWSER}, timeout=15)
+        r.raise_for_status()
+        for it in (r.json().get("data", {}).get("list") or [])[:MAX_ITEMS_PER_SOURCE]:
+            title = (it.get("title") or "").strip()
+            if not title:
+                continue
+            ts = int(time.time())
+            pub = (it.get("publishTime") or "").strip()
+            if pub:
+                try:
+                    from datetime import datetime as _dt
+                    ts = int(_dt.strptime(pub, "%Y-%m-%d %H:%M:%S").timestamp())
+                except Exception:
+                    pass
+            items.append(make_item(
+                source="netease-hot",
+                item_id=f"netease-hot:{it.get('docid') or _stable_hash(title)}",
+                title=title,
+                url=it.get("url") or "",
+                points=0,
+                timestamp=ts,
+                description="",
+                extra_tags=["社会新闻", "女性议题"],
+                extra_fields={},
+            ))
+    except Exception as e:
+        print(f"[ERROR] netease-hot: {e}")
+    return items
+
+
+def fetch_zhihu_daily():
+    """知乎日报 — 健康/心理/认知科普选题富矿"""
+    items = []
+    try:
+        r = requests.get(ZHIHU_DAILY_API, headers={"User-Agent": UA_BROWSER}, timeout=15)
+        r.raise_for_status()
+        for it in (r.json().get("stories") or [])[:MAX_ITEMS_PER_SOURCE]:
+            title = (it.get("title") or "").strip()
+            if not title:
+                continue
+            items.append(make_item(
+                source="zhihu-daily",
+                item_id=f"zhihu-daily:{it.get('id') or _stable_hash(title)}",
+                title=title,
+                url=it.get("url") or "",
+                points=0,
+                timestamp=int(time.time()),
+                description=(it.get("hint") or "").strip(),
+                extra_tags=["健康科普", "心理认知"],
+                extra_fields={},
+            ))
+    except Exception as e:
+        print(f"[ERROR] zhihu-daily: {e}")
+    return items
+
+
+def fetch_baidu_hot():
+    """百度热搜 — 40+ 女性搜索引擎主力，民生政策热词（社保/医保/退休）"""
+    items = []
+    try:
+        r = requests.get(BAIDU_BOARD_URL, headers={"User-Agent": UA_BROWSER}, timeout=15)
+        r.raise_for_status()
+        m = re.search(r'<!--s-data:(.*?)-->', r.text, re.S)
+        if not m:
+            print("[ERROR] baidu-hot: s-data marker not found")
+            return items
+        d = json.loads(m.group(1))
+        for card in d.get("data", {}).get("cards", []):
+            for it in (card.get("content") or []):
+                title = (it.get("word") or "").strip()
+                if not title:
+                    continue
+                items.append(make_item(
+                    source="baidu-hot",
+                    item_id=f"baidu-hot:{it.get('index','')}:{_stable_hash(title)}",
+                    title=title,
+                    url=it.get("url") or it.get("rawUrl") or "",
+                    points=int(float(it.get("hotScore") or 0)),
+                    timestamp=int(time.time()),
+                    description=(it.get("desc") or "")[:100],
+                    extra_tags=["民生政策", "搜索热词"],
+                    extra_fields={},
+                ))
+                if len(items) >= MAX_ITEMS_PER_SOURCE:
+                    break
+            if len(items) >= MAX_ITEMS_PER_SOURCE:
+                break
+    except Exception as e:
+        print(f"[ERROR] baidu-hot: {e}")
+    return items
+
+
 def main():
     state = load_state()
     sources_state = state.get("sources", {})
@@ -1654,6 +1761,9 @@ def main():
         "douyin-hot": fetch_douyin_hot,
         "thepaper-hot": fetch_thepaper_hot,
         "xueqiu-reach": fetch_xueqiu_reach,
+        "netease-hot": fetch_netease_hot,
+        "zhihu-daily": fetch_zhihu_daily,
+        "baidu-hot": fetch_baidu_hot,
     }
 
     all_results = {}

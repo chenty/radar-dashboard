@@ -143,6 +143,9 @@ SOURCE_META = [
     {"key": "douyin-hot", "name": "抖音热点", "category": "大众风向", "status": "ok", "desc": "40+女性主力平台的大众话题风向标，免登录官方接口"},
     {"key": "thepaper-hot", "name": "澎湃热榜", "category": "社会议题", "status": "ok", "desc": "婚姻/社保/健康等政策深度报道，免登录"},
     {"key": "xueqiu-reach", "name": "雪球热帖", "category": "财务与搞钱", "status": "ok", "desc": "中年理财/养老规划讨论，agent-reach 免登录采集"},
+    {"key": "netease-hot", "name": "网易新闻热榜", "category": "社会新闻", "status": "ok", "desc": "社会新闻里女性议题浓度最高的榜单（婚姻/安全/家暴），免登录"},
+    {"key": "zhihu-daily", "name": "知乎日报", "category": "健康科普", "status": "ok", "desc": "健康/心理/认知类科普选题富矿，免登录"},
+    {"key": "baidu-hot", "name": "百度热搜", "category": "民生政策", "status": "ok", "desc": "40+女性搜索主力平台的民生政策热词（社保/医保/退休），免登录"},
 ]
 
 
