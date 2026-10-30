@@ -128,26 +128,11 @@ def list_raw_dates():
 
 
 # 信息源元信息（用于管理页展示）
+# 信息源管理页展示的源清单（创作者版：只显示与「女人40岁之后」选题相关的 8 源）。
+# 独立开发者遗留源（trustmrr/indiehackers/reddit/producthunt/github×3/v2ex/kr36/oschina/jike×3/appstore×5）
+# 已从面板移除；daily_signals.py 的采集函数保留未删，需要时把对应行加回这里即可恢复。
 SOURCE_META = [
-    {"key": "trustmrr", "name": "trustmrr", "emoji": "🟢", "category": "海外", "type": "API", "desc": "已验证收入的创业公司数据（MRR/增长/技术栈）"},
-    {"key": "indiehackers", "name": "IndieHackers", "emoji": "🔵", "category": "海外", "type": "API", "desc": "独立开发者故事与案例研究"},
-    {"key": "reddit", "name": "Reddit", "emoji": "🟠", "category": "海外", "type": "API", "desc": "新产品讨论（r/SideProject 等）— 需 OAuth 解锁"},
-    {"key": "producthunt", "name": "Product Hunt", "emoji": "🟣", "category": "海外", "type": "API", "desc": "每日新品列表（GraphQL API）"},
-    {"key": "github", "name": "GitHub 总榜", "emoji": "🐙", "category": "海外", "type": "Scrape", "desc": "GitHub Trending 每日热榜仓库"},
-    {"key": "github-js", "name": "GitHub JS榜", "emoji": "🐙", "category": "海外", "type": "Scrape", "desc": "JavaScript/TypeScript 热榜（小程序技术栈参考）"},
-    {"key": "github-zh", "name": "GitHub 中文榜", "emoji": "🐙", "category": "海外", "type": "Scrape", "desc": "中文社区热门仓库（spoken_language_code=zh）"},
-    {"key": "v2ex", "name": "V2EX", "emoji": "🟤", "category": "国内", "type": "API", "desc": "技术/创业社区（分享创造/分享发现/程序员节点）"},
-    {"key": "kr36", "name": "36氪", "emoji": "🔴", "category": "国内", "type": "RSS", "desc": "创投、融资、科技公司动态"},
     {"key": "sspai", "name": "少数派", "emoji": "🟡", "category": "国内", "type": "RSS", "desc": "效率工具、数字生活、App 推荐"},
-    {"key": "oschina", "name": "开源中国", "emoji": "🟠", "category": "国内", "type": "RSS", "desc": "开源项目发布、技术新闻"},
-    {"key": "jike-ai-explore", "name": "即刻·AI探索站", "emoji": "⚡", "category": "国内", "type": "RSS", "desc": "AI 应用/产品一手讨论（RSSHub）"},
-    {"key": "jike-ai-discuss", "name": "即刻·AI讨论组", "emoji": "⚡", "category": "国内", "type": "RSS", "desc": "AI 技术/内容讨论（RSSHub）"},
-    {"key": "jike-engineer", "name": "即刻·工程师", "emoji": "⚡", "category": "国内", "type": "RSS", "desc": "工程师日常圈子（RSSHub）"},
-    {"key": "appstore-cn", "name": "App Store 中国", "emoji": "📱", "category": "国内", "type": "RSS", "desc": "中国区新上架应用（官方 RSS，看国内新产品方向，自动译中文）"},
-    {"key": "appstore-tw", "name": "App Store 台湾", "emoji": "📱", "category": "国内", "type": "RSS", "desc": "台湾区新上架应用（自动译中文）"},
-    {"key": "appstore-us", "name": "App Store 美国", "emoji": "📱", "category": "海外", "type": "RSS", "desc": "美国区新上架应用（全球创新前沿，自动译中文）"},
-    {"key": "appstore-jp", "name": "App Store 日本", "emoji": "📱", "category": "海外", "type": "RSS", "desc": "日本区新上架应用（亚洲成熟市场，自动译中文）"},
-    {"key": "appstore-kr", "name": "App Store 韩国", "emoji": "📱", "category": "海外", "type": "RSS", "desc": "韩国区新上架应用（美妆/社交/游戏创新，自动译中文）"},
     {"key": "weibo-hot", "name": "微博热搜", "emoji": "🔥", "category": "国内", "type": "API", "desc": "微博热搜榜 — 大众情绪与女性话题主阵地（公众号选题核心源）"},
     {"key": "zhihu-hot", "name": "知乎热榜", "emoji": "🧩", "category": "国内", "type": "API", "desc": "知乎热榜 — 观点争议与深度讨论（找真争议点的富矿）"},
     {"key": "bili-hot", "name": "B站热门", "emoji": "📺", "category": "国内", "type": "API", "desc": "B站全站热门 — 生活方式/健康/情感类视频趋势"},
@@ -156,6 +141,7 @@ SOURCE_META = [
     {"key": "bilibili-reach", "name": "B站定向", "emoji": "🎬", "category": "国内", "type": "Agent Reach", "desc": "40+ 女性/中女议题定向搜索（B站官方CLI）— 需本人登录"},
     {"key": "weibo-reach", "name": "微博定向", "emoji": "🗣️", "category": "国内", "type": "浏览器渲染", "desc": "微博移动版「中年女性」议题搜索（免登录，需 agent 侧预渲染页面）"},
 ]
+
 
 # 各源采集脚本内对应的 last_seen 状态 key
 SOURCE_STATE_KEYS = {m["key"]: m["key"] for m in SOURCE_META}
