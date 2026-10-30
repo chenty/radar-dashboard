@@ -4,8 +4,8 @@
 
 <table>
   <tr>
-    <td align="center"><img src="docs/screenshot-miniapp-dark.png" alt="公众号选题页 · 深色极简主题"><br><b>深色极简</b></td>
-    <td align="center"><img src="docs/screenshot-miniapp-light.png" alt="公众号选题页 · 暖色杂志主题"><br><b>暖色杂志</b></td>
+    <td align="center"><img src="docs/screenshot-topics-dark.png" alt="公众号选题页 · 深色极简主题"><br><b>深色极简</b></td>
+    <td align="center"><img src="docs/screenshot-topics-light.png" alt="公众号选题页 · 暖色杂志主题"><br><b>暖色杂志</b></td>
   </tr>
 </table>
 
