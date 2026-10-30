@@ -14,6 +14,7 @@ daily_signals.py — 多渠道独立开发者信号采集器 v3 (重构版)
 import json
 import os
 import re
+import subprocess
 import sys
 import time
 import urllib.parse
@@ -848,6 +849,287 @@ def fetch_oschina():
 
 
 # ============================================================
+# SOURCE 11+: 女人40岁之后方向 — 微博热搜 / 知乎热榜 / B站热门 / 36氪快讯
+# ============================================================
+
+WEIBO_HOT_API = "https://api.codelife.cc/api/top/list?lang=cn&id=KqndgxeLl9"  # 微博热搜榜聚合
+ZHIHU_HOT_API = "https://api.zhihu.com/topstory/hot-list?limit=50"
+BILI_HOT_API = "https://api.bilibili.com/x/web-interface/popular"
+
+
+def _lookback_ok(ts):
+    return int(ts) >= int(time.time()) - (LOOKBACK_HOURS * 3600)
+
+
+def fetch_weibo_hot():
+    """微博热搜榜 — 大众情绪与女性话题的主阵地"""
+    items = []
+    try:
+        r = requests.get(WEIBO_HOT_API, headers={"User-Agent": UA_BROWSER}, timeout=15)
+        r.raise_for_status()
+        data = r.json().get("data") or []
+        for it in data[:MAX_ITEMS_PER_SOURCE]:
+            title = (it.get("title") or "").strip()
+            if not title:
+                continue
+            items.append(make_item(
+                source="weibo-hot",
+                item_id=f"weibo-hot:{it.get('index','')}:{hash(title) & 0xffffffff}",
+                title=title,
+                url=it.get("link") or "",
+                points=0,
+                timestamp=int(time.time()),
+                description=f"热度 {it.get('hotValue','')}" if it.get("hotValue") else "",
+                extra_tags=["女性话题", "大众情绪"],
+                extra_fields={}
+            ))
+    except Exception as e:
+        print(f"[ERROR] weibo-hot: {e}")
+    return items
+
+
+def fetch_zhihu_hot():
+    """知乎热榜 — 观点争议与深度讨论"""
+    items = []
+    try:
+        r = requests.get(ZHIHU_HOT_API, headers={"User-Agent": UA_BROWSER}, timeout=15)
+        r.raise_for_status()
+        data = r.json().get("data") or []
+        for it in data[:MAX_ITEMS_PER_SOURCE]:
+            t = it.get("target") or {}
+            title = (t.get("title") or "").strip()
+            if not title:
+                continue
+            detail = t.get("detail_text") or t.get("excerpt") or ""
+            # detail_text 形如 "590 万热度"；从 meta 里拿真实热度数
+            hot_num = ""
+            try:
+                hot_num = str(t.get("reward", {}).get("total", "") or "")
+            except Exception:
+                pass
+            items.append(make_item(
+                source="zhihu-hot",
+                item_id=f"zhihu-hot:{t.get('id','')}",
+                title=title,
+                url=f"https://www.zhihu.com/question/{t.get('id','')}",
+                points=0,
+                timestamp=int(time.time()),
+                description=detail[:400],
+                extra_tags=["观点争议"],
+                extra_fields={}
+            ))
+    except Exception as e:
+        print(f"[ERROR] zhihu-hot: {e}")
+    return items
+
+
+def fetch_bili_hot():
+    """B站热门 — 生活方式/健康/情感类视频趋势"""
+    items = []
+    try:
+        r = requests.get(BILI_HOT_API, headers={"User-Agent": UA_BROWSER,
+            "Referer": "https://www.bilibili.com"}, timeout=15)
+        r.raise_for_status()
+        data = (r.json().get("data") or {}).get("list") or []
+        for it in data[:MAX_ITEMS_PER_SOURCE]:
+            title = (it.get("title") or "").strip()
+            if not title:
+                continue
+            owner = (it.get("owner") or {}).get("name", "")
+            stat = it.get("stat") or {}
+            desc = f"UP: {owner} | 播放 {stat.get('view', 0)} 弹幕 {stat.get('danmaku', 0)}"
+            items.append(make_item(
+                source="bili-hot",
+                item_id=f"bili-hot:{it.get('aid','')}",
+                title=title,
+                url=f"https://www.bilibili.com/video/av{it.get('aid','')}",
+                points=stat.get("like", 0) or 0,
+                timestamp=int(it.get("pubdate") or int(time.time())),
+                description=desc[:400],
+                extra_tags=["生活方式"],
+                extra_fields={}
+            ))
+    except Exception as e:
+        print(f"[ERROR] bili-hot: {e}")
+    return items
+
+
+def fetch_xiaohongshu_reach():
+    """小红书 — via agent-reach CLI（已登录专用浏览器）"""
+    items = []
+    try:
+        env = dict(os.environ)
+        env.setdefault("DISPLAY", ":1")
+        env.setdefault("PATH", os.environ.get("PATH", "") + os.pathsep + "/home/agentuser/.local/bin")
+        # 多组选题关键词，每个词取少量结果
+        queries = ["女人40岁", "40岁女性 成长", "中年女性 健康", "女性 财务 独立"]
+        seen_ids = set()
+        for q in queries:
+            try:
+                out = subprocess.run(
+                    ["agent-reach", "xiaohongshu", "search", q, "--limit", "10"],
+                    capture_output=True, text=True, timeout=180, env=env,
+                )
+                data = json.loads(out.stdout)
+                if not data.get("ok"):
+                    print(f"[ERROR] xiaohongshu search '{q}': {data.get('error', {}).get('code')}")
+                    continue
+                for it in data.get("items", []):
+                    raw = it.get("raw") or {}
+                    url = it.get("url") or ""
+                    title = (it.get("title") or "").strip()
+                    if not title:
+                        continue
+                    item_id = f"xiaohongshu:{url.split('/search_result/')[-1].split('?')[0] or hash(title) & 0xffffffff}"
+                    if item_id in seen_ids:
+                        continue
+                    seen_ids.add(item_id)
+                    likes = str(raw.get("likes", "") or "")
+                    try:
+                        likes_num = int(likes)
+                    except Exception:
+                        likes_num = 0
+                    items.append(make_item(
+                        source="xiaohongshu",
+                        item_id=item_id,
+                        title=title,
+                        url=url,
+                        points=likes_num,
+                        timestamp=int(time.time()),
+                        description=f"作者 {it.get('author', '')} | 赞 {likes}",
+                        extra_tags=["女性话题", "生活方式"],
+                        extra_fields={},
+                    ))
+                time.sleep(10)  # 同平台两次搜索至少隔 10 秒
+            except Exception as e:
+                print(f"[ERROR] xiaohongshu query '{q}': {e}")
+    except Exception as e:
+        print(f"[ERROR] xiaohongshu: {e}")
+    return items
+
+
+def fetch_bilibili_reach():
+    """B站定向搜索 — via agent-reach（已登录，与 bili-hot 热门榜互补）"""
+    items = []
+    try:
+        env = dict(os.environ)
+        env.setdefault("DISPLAY", ":1")
+        queries = ["40岁 中女", "中年女性 健康", "女性 成长", "40岁 生活方式"]
+        seen_ids = set()
+        for q in queries:
+            try:
+                out = subprocess.run(
+                    ["agent-reach", "bilibili", "search", q, "--limit", "10"],
+                    capture_output=True, text=True, timeout=180, env=env,
+                )
+                data = json.loads(out.stdout)
+                if not data.get("ok"):
+                    print(f"[ERROR] bilibili search '{q}': {data.get('error', {}).get('code')}")
+                    continue
+                for it in data.get("items", []):
+                    url = it.get("url") or ""
+                    title = (it.get("title") or "").strip()
+                    if not title:
+                        continue
+                    m = re.search(r"(av\d+|BV[0-9A-Za-z]+)", url)
+                    item_id = f"bilibili-reach:{m.group(1) if m else hash(title) & 0xffffffff}"
+                    if item_id in seen_ids:
+                        continue
+                    seen_ids.add(item_id)
+                    raw = it.get("raw") or {}
+                    desc = f"UP: {it.get('author', '')}"
+                    items.append(make_item(
+                        source="bilibili-reach",
+                        item_id=item_id,
+                        title=title,
+                        url=url,
+                        points=0,
+                        timestamp=int(time.time()),
+                        description=desc[:400],
+                        extra_tags=["生活方式", "女性话题"],
+                        extra_fields={},
+                    ))
+                time.sleep(10)
+            except Exception as e:
+                print(f"[ERROR] bilibili query '{q}': {e}")
+    except Exception as e:
+        print(f"[ERROR] bilibili-reach: {e}")
+    return items
+
+
+def fetch_weibo_reach():
+    """微博定向搜索 — m.weibo.cn 移动版公开页（免登录）。
+
+    抽取逻辑由 Hermes 浏览器渲染完成：fetch 阶段调用 external_collector 协议——
+    若无浏览器环境（cron 后台），降级为 requests 抓 SPA 外壳再正则抽卡（成功率低，标记 degraded）。
+    """
+    items = []
+    queries = ["中年女性 焦虑", "40岁 婚姻", "中年女性 健康", "40岁 独立"]
+    seen_ids = set()
+
+    def _parse_card_text(raw_html: str):
+        """从页面 HTML 正则抽取微博正文卡片"""
+        out = []
+        for m in re.finditer(r'<div class="weibo-text">(.*?)</div>', raw_html, re.S):
+            text = re.sub(r"<[^>]+>", "", m.group(1))
+            text = re.sub(r"\s+", " ", text).strip()
+            if len(text) >= 15:
+                out.append(text[:300])
+        return out
+
+    html = ""
+    # 1) 优先：读取 agent 浏览器缓存的渲染页（fetch_weibo_reach 由 agent 侧预先写入）
+    cache_file = Path("/home/agentuser/.hermes/cache/weibo_reach_last_page.html")
+    if cache_file.exists():
+        age = time.time() - cache_file.stat().st_mtime
+        if age < 3600:  # 1 小时内有效
+            html = cache_file.read_text(encoding="utf-8", errors="ignore")
+    # 2) 降级：requests 直抓（大概率 432，仅记录）
+    if not html:
+        try:
+            r = requests.get(
+                "https://m.weibo.cn/search?containerid=100103type%3D1%26q%3D"
+                + urllib.parse.quote(queries[0]),
+                headers={"User-Agent": UA_BROWSER}, timeout=15,
+            )
+            html = r.text if r.status_code == 200 else ""
+        except Exception:
+            html = ""
+
+    if not html:
+        print("[ERROR] weibo-reach: no rendered page available (need browser render first)")
+        return items
+
+    texts = _parse_card_text(html)
+    for t in texts:
+        item_id = f"weibo-reach:{hash(t) & 0xffffffff}"
+        if item_id in seen_ids:
+            continue
+        seen_ids.add(item_id)
+        items.append(make_item(
+            source="weibo-reach",
+            item_id=item_id,
+            title=t[:80],
+            url="https://m.weibo.cn/search?containerid=100103type%3D1%26q%3D%E4%B8%AD%E5%B9%B4%E5%A5%B3%E6%80%A7",
+            points=0,
+            timestamp=int(time.time()),
+            description=t,
+            extra_tags=["女性话题", "大众情绪"],
+            extra_fields={},
+        ))
+    print(f"[INFO] weibo-reach: {len(items)} items")
+    return items
+
+
+def fetch_kr36_newsflashes():
+    """36氪快讯 — 消费/创投/生活方式商业动态"""
+    return _parse_rss_feed(
+        "https://rsshub.umzzz.com/36kr/newsflashes", "kr36-flash", "消费商业"
+    )
+
+
+
+# ============================================================
 # SOURCE 10: 即刻圈子 (RSSHub 公共实例)
 # ============================================================
 
@@ -1180,6 +1462,13 @@ def main():
         "oschina": fetch_oschina,
         "jike": fetch_jike,
         "appstore": fetch_appstore,
+        "weibo-hot": fetch_weibo_hot,
+        "zhihu-hot": fetch_zhihu_hot,
+        "bili-hot": fetch_bili_hot,
+        "kr36-flash": fetch_kr36_newsflashes,
+        "xiaohongshu": fetch_xiaohongshu_reach,
+        "bilibili-reach": fetch_bilibili_reach,
+        "weibo-reach": fetch_weibo_reach,
     }
 
     all_results = {}

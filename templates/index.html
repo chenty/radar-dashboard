@@ -687,7 +687,7 @@ body {
       </a>
       <a class="nav-item" href="#/miniapp" data-route="miniapp">
         <span class="dot" style="background:var(--green)"></span>
-        <span>📱 小程序机会</span>
+        <span>✍️ 公众号选题</span>
       </a>
       <a class="nav-item" href="#/stats" data-route="stats">
         <span class="dot" style="background:var(--teal)"></span>
@@ -735,7 +735,7 @@ body {
       </a>
       <a class="nav-item" href="#/module/mini-program" data-route="module-mini-program">
         <span class="dot" style="background:var(--green)"></span>
-        <span>小程序机会库</span>
+        <span>公众号选题库</span>
         <span class="badge" data-badge="mini-program">0</span>
       </a>
       <a class="nav-item" href="#/module/wisdom" data-route="module-wisdom">
@@ -804,7 +804,7 @@ async function api(path) {
 const FAV_TYPE_LABELS = {
   'signal': '📡 信号',
   'report_item': '📋 日报模块',
-  'miniapp': '📱 小程序机会',
+  'miniapp': '✍️ 公众号选题',
 };
 
 // 收藏页描述文本（按类型展示完整字段）
@@ -858,7 +858,7 @@ async function renderFavorites(container) {
       <div class="empty-state">
         <div class="icon">⭐</div>
         <h3>还没有收藏</h3>
-        <p>在信号流、日报详情、小程序机会里点 ☆ 即可收藏单条信息</p>
+        <p>在信号流、日报详情、公众号选题里点 ☆ 即可收藏单条信息</p>
         <div class="hint">收藏的内容会聚合在这里，方便你快速找到和使用</div>
       </div>`;
     return;
@@ -990,14 +990,13 @@ function buildCopyText(obj) {
   lines.push(`【标题】${obj.title_cn || obj.name_cn || obj.title || ''}`);
 
   if (obj.type === 'miniapp') {
-    // 小程序机会：全字段导出
+    // 公众号选题：全字段导出
     const fields = [
-      ['启发', obj.inspiration || raw.inspiration],
-      ['建议', obj.suggestion || raw.suggestion],
-      ['关键词', (raw.keywords || []).join(' / ')],
-      ['用户需求', obj.userNeed || raw.userNeed],
-      ['痛点', obj.painPoint || raw.painPoint],
-      ['怎么做', obj.howToBuild || raw.howToBuild],
+      ['启发', raw.signal],
+      ['核心观点', raw.corePoint],
+      ['争议点', raw.controversy],
+      ['目标读者', raw.audience],
+      ['表达方式', raw.expression],
       ['关联信号', raw.relatedSignal],
     ];
     fields.forEach(([k, v]) => { if (v) lines.push(`【${k}】${v}`); });
@@ -1135,7 +1134,7 @@ async function render() {
       title.textContent = '📡 日报时间线';
       await renderTimeline(content);
     } else if (parts[0] === 'miniapp') {
-      title.textContent = '📱 小程序机会';
+      title.textContent = '✍️ 公众号选题';
       await renderMiniProgram(content);
     } else if (parts[0] === 'stats') {
       title.textContent = '📊 统计与趋势';
@@ -1161,7 +1160,7 @@ async function render() {
         'tools': '🔧 工具库',
         'pitfalls': '⚠️ 踩坑库',
         'signals': '📊 数据信号库',
-        'mini-program': '📱 小程序机会库',
+        'mini-program': '✍️ 公众号选题库',
         'wisdom': '🧠 心法库',
       };
       title.textContent = labels[parts[1]] || '模块视图';
@@ -1241,7 +1240,7 @@ async function renderDaily(container, dateStr) {
     { key: 'tools', emoji: '🔧', label: '今日工具' },
     { key: 'pitfalls', emoji: '⚠️', label: '今日踩坑' },
     { key: 'dataSignals', emoji: '📊', label: '今日数据信号' },
-    { key: 'miniProgram', emoji: '📱', label: '微信小程序机会' },
+    { key: 'publicAccountTopics', emoji: '✍️', label: '公众号选题 · 女人40岁之后' },
     { key: 'dailyWisdom', emoji: '🧠', label: '今日心法' },
   ];
 
@@ -1329,9 +1328,10 @@ function renderModuleItem(modKey, item) {
     { key: 'signal', label: '信号来源' },
     { key: 'whyNow', label: '为什么现在能做' },
     { key: 'inspiration', label: '启发' },
-    { key: 'userNeed', label: '用户需求' },
-    { key: 'painPoint', label: '痛点' },
-    { key: 'howToBuild', label: '怎么做' },
+    { key: 'corePoint', label: '核心观点' },
+    { key: 'controversy', label: '争议点' },
+    { key: 'audience', label: '目标读者' },
+    { key: 'expression', label: '表达方式' },
     { key: 'relatedSignal', label: '关联信号' },
   ];
   for (const f of fields) {
@@ -1340,7 +1340,7 @@ function renderModuleItem(modKey, item) {
     }
   }
 
-  // Keywords array (miniProgram module)
+  // Keywords array (publicAccountTopics module)
   if (item.keywords && Array.isArray(item.keywords) && item.keywords.length) {
     html += `<div class="field"><strong>关键词：</strong>${item.keywords.map(k => `<span class="chip" style="display:inline-block;margin:2px 4px 2px 0">${escapeHtml(k)}</span>`).join('')}</div>`;
   }
@@ -1654,35 +1654,33 @@ async function renderSources(container) {
   container.innerHTML = html;
 }
 
-// ─── 小程序机会专页（信息源式密集展示 + 关键词筛选） ───
+// ─── 公众号选题专页（信息源式密集展示 + 筛选） ───
 async function renderMiniProgram(container) {
   const items = await api('/modules/mini-program');
 
   if (!items.length) {
     container.innerHTML = `
       <div class="empty-state">
-        <div class="icon">📱</div>
-        <h3>还没有小程序机会</h3>
-        <p>每天日报会生成 3-5 条小程序机会，聚合展示在这里</p>
+        <div class="icon">✍️</div>
+        <h3>还没有公众号选题</h3>
+        <p>每天日报会生成 3-5 条「女人40岁之后」选题，聚合展示在这里</p>
       </div>`;
     return;
   }
 
-  // 统计：总机会、覆盖天数、关键词云
+  // 统计：总选题、覆盖天数、热门切面
   const dates = new Set(items.map(i => i.date));
-  const kwCount = {};
-  items.forEach(i => (i.keywords || []).forEach(k => { kwCount[k] = (kwCount[k] || 0) + 1; }));
-  const topKws = Object.entries(kwCount).sort((a, b) => b[1] - a[1]).slice(0, 12);
+  const facets = ['自我成长', '健康与身体', '财务与搞钱', '关系与家庭', '心态与情绪', '生活方式'];
 
   let html = `
     <div class="sources-summary">
-      <div class="source-stat-card"><div class="num" style="color:var(--green)">${items.length}</div><div class="lbl">小程序机会</div></div>
+      <div class="source-stat-card"><div class="num" style="color:var(--green)">${items.length}</div><div class="lbl">公众号选题</div></div>
       <div class="source-stat-card"><div class="num">${dates.size}</div><div class="lbl">覆盖天数</div></div>
-      <div class="source-stat-card" style="flex:1;min-width:280px"><div class="lbl" style="margin-bottom:6px">热门方向关键词</div>
-        <div style="display:flex;flex-wrap:wrap;gap:5px">${topKws.map(([k, n]) => `<span class="mp-kw" style="font-size:.68rem;color:var(--green);background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.25);border-radius:8px;padding:1px 8px">${escapeHtml(k)} ×${n}</span>`).join('')}</div>
+      <div class="source-stat-card" style="flex:1;min-width:280px"><div class="lbl" style="margin-bottom:6px">内容切面</div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px">${facets.map(f => `<span class="mp-kw" style="font-size:.68rem;color:var(--green);background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.25);border-radius:8px;padding:1px 8px">${f}</span>`).join('')}</div>
       </div>
     </div>
-    <label class="visually-hidden" for="mpFilter">按关键词/标题筛选小程序机会</label>
+    <label class="visually-hidden" for="mpFilter">按关键词/标题筛选公众号选题</label>
     <input class="mp-filter" id="mpFilter" placeholder="🔍 按关键词/标题筛选…" oninput="filterMiniProgram(this.value)">
     <div id="mpGrid" class="mp-grid">`;
 
@@ -1705,25 +1703,25 @@ async function renderMiniProgram(container) {
 }
 
 function mpCardHtml(item) {
-  const kws = (item.keywords || []).slice(0, 6);
-  const searchText = [item.title, item.inspiration, item.suggestion, item.userNeed,
-    item.painPoint, item.howToBuild, item.relatedSignal, (item.keywords || []).join(' ')]
+  const searchText = [item.title, item.signal, item.corePoint, item.controversy,
+    item.audience, item.expression, item.relatedSignal]
     .join(' ').toLowerCase();
-  const favObj = {type: 'miniapp', title: item.title || item.suggestion || '未命名机会',
-    url: '', source: 'miniapp', source_label: '📱 小程序机会', date: item.date || '',
-    desc: (item.userNeed || '') + ' | ' + (item.howToBuild || ''), raw: item};
+  const favObj = {type: 'miniapp', title: item.title || '未命名选题',
+    url: '', source: 'miniapp', source_label: '✍️ 公众号选题', date: item.date || '',
+    desc: (item.corePoint || '') + ' | ' + (item.controversy || ''), raw: item};
   return `
     <div class="mp-card" data-search="${escapeHtml(searchText)}">
       <div class="mp-head">
-        <span class="mp-title">📱 ${escapeHtml(item.title || item.suggestion || '未命名机会')}</span>
+        <span class="mp-title">✍️ ${escapeHtml(item.title || '未命名选题')}</span>
         ${favBtnHtml(favObj, 'large')}
         ${copyBtnHtml(favObj, 'large')}
         <span class="mp-date">${item.date}</span>
       </div>
-      ${kws.length ? `<div class="mp-kw">${kws.map(k => `<span>${escapeHtml(k)}</span>`).join('')}</div>` : ''}
-      <div class="mp-line"><b>用户需求：</b>${escapeHtml(item.userNeed || '—')}</div>
-      <div class="mp-line"><b>痛点：</b>${escapeHtml(item.painPoint || '—')}</div>
-      ${item.howToBuild ? `<div class="mp-line"><b>怎么做：</b>${escapeHtml(item.howToBuild)}</div>` : ''}
+      ${item.corePoint ? `<div class="mp-line"><b>核心观点：</b>${escapeHtml(item.corePoint)}</div>` : ''}
+      ${item.controversy ? `<div class="mp-line" style="color:var(--orange)"><b>🔥 争议点：</b>${escapeHtml(item.controversy)}</div>` : ''}
+      ${item.audience ? `<div class="mp-line"><b>目标读者：</b>${escapeHtml(item.audience)}</div>` : ''}
+      ${item.expression ? `<div class="mp-line"><b>表达方式：</b>${escapeHtml(item.expression)}</div>` : ''}
+      ${item.signal ? `<div class="mp-line"><b>启发：</b>${escapeHtml(item.signal)}</div>` : ''}
       ${item.relatedSignal ? `<div class="mp-signal">📡 ${escapeHtml(item.relatedSignal)}</div>` : ''}
     </div>`;
 }
@@ -1824,7 +1822,7 @@ function moduleLabel(key) {
   const map = {
     'opportunities': '机会', 'moneyCases': '赚钱案例', 'productInspirations': '产品灵感',
     'growthTips': '增长技巧', 'tools': '工具', 'pitfalls': '踩坑',
-    'dataSignals': '数据信号', 'miniProgram': '小程序机会', 'dailyWisdom': '心法',
+    'dataSignals': '数据信号', 'publicAccountTopics': '公众号选题', 'dailyWisdom': '心法',
   };
   return map[key] || key;
 }
@@ -1837,7 +1835,7 @@ const moduleLabels = {
   'tools': '🔧 今日工具 — 跨日聚合',
   'pitfalls': '⚠️ 今日踩坑 — 跨日聚合',
   'signals': '📊 今日数据信号 — 跨日聚合',
-  'mini-program': '📱 微信小程序机会 — 跨日聚合',
+  'mini-program': '✍️ 公众号选题 — 跨日聚合',
   'wisdom': '🧠 今日心法 — 跨日聚合',
 };
 
@@ -1854,7 +1852,7 @@ async function updateTopStats() {
         'opportunities': 'opportunities', 'moneyCases': 'money-cases',
         'productInspirations': 'inspirations', 'growthTips': 'growth',
         'tools': 'tools', 'pitfalls': 'pitfalls',
-        'dataSignals': 'signals', 'miniProgram': 'mini-program',
+        'dataSignals': 'signals', 'publicAccountTopics': 'mini-program',
         'dailyWisdom': 'wisdom',
       }[mod];
       if (badgeKey) {

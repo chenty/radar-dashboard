@@ -78,7 +78,7 @@ def get_module(module_name):
         'tools': 'tools',
         'pitfalls': 'pitfalls',
         'signals': 'dataSignals',
-        'mini-program': 'miniProgram',
+        'mini-program': 'publicAccountTopics',
         'wisdom': 'dailyWisdom',
     }
     key = module_map.get(module_name)
@@ -141,6 +141,10 @@ SOURCE_META = [
     {"key": "appstore-us", "name": "App Store 美国", "emoji": "📱", "category": "海外", "type": "RSS", "desc": "美国区新上架应用（全球创新前沿，自动译中文）"},
     {"key": "appstore-jp", "name": "App Store 日本", "emoji": "📱", "category": "海外", "type": "RSS", "desc": "日本区新上架应用（亚洲成熟市场，自动译中文）"},
     {"key": "appstore-kr", "name": "App Store 韩国", "emoji": "📱", "category": "海外", "type": "RSS", "desc": "韩国区新上架应用（美妆/社交/游戏创新，自动译中文）"},
+    {"key": "weibo-hot", "name": "微博热搜", "emoji": "🔥", "category": "国内", "type": "API", "desc": "微博热搜榜 — 大众情绪与女性话题主阵地（公众号选题核心源）"},
+    {"key": "zhihu-hot", "name": "知乎热榜", "emoji": "🧩", "category": "国内", "type": "API", "desc": "知乎热榜 — 观点争议与深度讨论（找真争议点的富矿）"},
+    {"key": "bili-hot", "name": "B站热门", "emoji": "📺", "category": "国内", "type": "API", "desc": "B站全站热门 — 生活方式/健康/情感类视频趋势"},
+    {"key": "kr36-flash", "name": "36氪快讯", "emoji": "📰", "category": "国内", "type": "RSS", "desc": "36氪快讯 — 消费/创投/生活方式商业动态"},
 ]
 
 # 各源采集脚本内对应的 last_seen 状态 key
