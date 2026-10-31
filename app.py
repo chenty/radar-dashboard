@@ -132,6 +132,7 @@ def list_raw_dates():
 # 旧定位遗留源（trustmrr/indiehackers/reddit/producthunt/github×3/v2ex/kr36/oschina/jike×3/appstore×5）
 # 已从面板移除；daily_signals.py 的采集函数保留未删，需要时把对应行加回这里即可恢复。
 SOURCE_META = [
+    {"key": "tavily", "name": "Tavily 全网搜索", "emoji": "🔎", "category": "定向搜索", "type": "MCP", "desc": "40+女性六大主题的新闻搜索，需要 TAVILY_API_KEY"},
     {"key": "sspai", "name": "少数派", "emoji": "🟡", "category": "国内", "type": "RSS", "desc": "效率工具、数字生活、App 推荐"},
     {"key": "weibo-hot", "name": "微博热搜", "emoji": "🔥", "category": "国内", "type": "API", "desc": "微博热搜榜 — 大众情绪与女性话题主阵地（公众号选题核心源）"},
     {"key": "zhihu-hot", "name": "知乎热榜", "emoji": "🧩", "category": "国内", "type": "API", "desc": "知乎热榜 — 观点争议与深度讨论（找真争议点的富矿）"},

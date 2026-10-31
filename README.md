@@ -203,3 +203,17 @@ radar-dashboard/
 ## 📄 来源与致谢
 
 本项目基于 [susumr/radar-dashboard](https://github.com/susumr/radar-dashboard)（原作者是独立开发者，面向小程序/出海产品机会发现）二次开发，感谢其开源的「采集 → 生成 → 展示」管道架构与面板设计。本版本将场景改造为**自媒体内容选题**，信号源、日报 prompt 与模块结构均有较大改动，与上游不互相兼容。
+
+### Tavily 全网信号源（可选）
+
+采集器通过本地 Tavily MCP 的 `tavily_search`，围绕 40+ 女性的成长、健康、财务、家庭、情绪与生活方式搜索。使用前先重新安装依赖（`bash install.sh`），并在 `~/tavily-mcp` 运行 `npm ci` 构建本地服务（需要 Node.js 20）；服务默认路径为 `~/tavily-mcp/build/index.js`，可用环境变量 `TAVILY_MCP_SERVER` 指定其他路径。之后在**运行采集脚本的进程环境**中设置密钥：
+
+```bash
+# 在安全的终端中设置新密钥，不要把密钥写进命令历史或聊天
+read -rs -p 'Tavily API Key: ' TAVILY_API_KEY; echo
+export TAVILY_API_KEY
+ENHANCE_ZH=0 venv/bin/python scripts/daily_signals.py
+unset TAVILY_API_KEY
+```
+
+密钥仅从环境变量读取，项目 `.env` 不会被自动加载。定时任务需要通过其安全的密钥管理机制提供环境变量。每次采集最多调用 6 次 `basic` 新闻搜索（每次最多 5 条），可能消耗 Tavily 配额或产生费用，请查看账户价格；按链接去重。缺少 Key 时跳过 Tavily，不影响其他信号源。搜索摘要仅是线索，撰写日报前应核实来源与事实；没有发布日期的结果使用采集时间，不代表发布时间。采集器同日重跑会覆盖当日原始文件，请先备份。日志不会打印密钥；此前在聊天中暴露的密钥应撤销并更换。

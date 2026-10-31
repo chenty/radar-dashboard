@@ -1732,6 +1732,116 @@ def fetch_baidu_hot():
     return items
 
 
+# Tavily MCP: 6 个主题，每次采集最多 6 次 basic 搜索（可能消耗额度）。
+TAVILY_QUERIES = [
+    ("自我成长", "40岁女性 自我成长 职场 生活 最新"),
+    ("健康与身体", "中年女性 健康 更年期 睡眠 最新"),
+    ("财务与搞钱", "中年女性 理财 财务 独立 养老 最新"),
+    ("关系与家庭", "中年女性 家庭 亲子 照护 关系 最新"),
+    ("心态与情绪", "中年女性 心理 情绪 压力 最新"),
+    ("生活方式", "40岁女性 生活方式 消费 兴趣 最新"),
+]
+
+
+def _tavily_results(payload, facet, seen):
+    """把 MCP 结构化结果转为本项目条目；按原始 URL 去重。"""
+    if not isinstance(payload, dict) or not isinstance(payload.get("results"), list):
+        raise ValueError("搜索响应缺少 results，可能为鉴权或额度错误")
+    items = []
+    for hit in payload["results"]:
+        if not isinstance(hit, dict):
+            continue
+        url, title = hit.get("url"), hit.get("title")
+        if not isinstance(url, str) or not url.startswith(("https://", "http://")) or url in seen:
+            continue
+        if not isinstance(title, str) or not title.strip():
+            continue
+        seen.add(url)
+        published = hit.get("published_date") or hit.get("publishedDate")
+        items.append(make_item("tavily", _stable_hash(url), title, url, 0,
+                               published or int(time.time()),
+                               description=str(hit.get("content") or "")[:1200],
+                               extra_tags=[facet]))
+    return items
+
+
+def _parse_tavily_text(text):
+    """解析上游本地 MCP 服务 formatResults 的文本，不把错误信息当作结果。"""
+    if not isinstance(text, str) or "Detailed Results:" not in text:
+        raise ValueError("本地 MCP 返回了错误或未知格式")
+    results, current, field = [], None, None
+    for line in text.splitlines():
+        if line.startswith("Title: "):
+            if current:
+                results.append(current)
+            current = {"title": line[7:].strip()}
+            field = None
+        elif current is not None and line.startswith("URL: ") and not current.get("url"):
+            current["url"] = line[5:].strip()
+            field = None
+        elif current is not None and line.startswith("Content: "):
+            current["content"] = line[9:].strip()
+            field = "content"
+        elif current is not None and line.startswith(("ID: ", "Raw Content: ", "Favicon: ")):
+            field = None
+        elif current is not None and field == "content":
+            current["content"] += "\n" + line
+    if current:
+        results.append(current)
+    return {"results": results}
+
+
+def fetch_tavily():
+    """启动本地 Tavily MCP stdio 服务；密钥只通过子进程环境传递。"""
+    key = os.environ.get("TAVILY_API_KEY", "").strip()
+    if not key:
+        print("[INFO] tavily: 未设置 TAVILY_API_KEY，跳过")
+        return []
+    server = Path(os.environ.get("TAVILY_MCP_SERVER", Path.home() / "tavily-mcp" / "build" / "index.js"))
+    if not server.is_file():
+        print("[ERROR] tavily: 本地 MCP 构建文件不存在，请在 tavily-mcp 目录运行 npm ci")
+        return []
+
+    async def collect():
+        import asyncio
+        from mcp import ClientSession, StdioServerParameters
+        from mcp.client.stdio import stdio_client, get_default_environment
+
+        items, seen = [], set()
+        env = get_default_environment()
+        env["TAVILY_API_KEY"] = key
+        config = StdioServerParameters(command="node", args=[str(server)], env=env)
+        # 上游错误可能包含请求详情；不将服务端 stderr 写入采集日志。
+        with open(os.devnull, "w") as errlog:
+            async with stdio_client(config, errlog=errlog) as (read, write):
+                async with ClientSession(read, write) as session:
+                    await session.initialize()
+                    for facet, query in TAVILY_QUERIES:
+                        try:
+                            result = await asyncio.wait_for(session.call_tool("tavily_search", {
+                                "query": query, "search_depth": "basic", "max_results": 5,
+                                "topic": "news", "time_range": "week"
+                            }), timeout=45)
+                            if result.isError:
+                                print(f"[ERROR] tavily: {facet} 搜索失败（请检查密钥、额度或服务状态）")
+                                continue
+                            payload = result.structuredContent
+                            if payload is None:
+                                texts = [c.text for c in result.content if getattr(c, "type", "") == "text"]
+                                payload = _parse_tavily_text(texts[0]) if texts else None
+                            items.extend(_tavily_results(payload, facet, seen))
+                        except Exception:
+                            print(f"[ERROR] tavily: {facet} 搜索失败或响应格式异常")
+        return items
+
+    try:
+        import asyncio
+        return asyncio.run(collect())
+    except Exception:
+        print("[ERROR] tavily: 本地 MCP 启动失败（请检查 Node.js、构建文件和依赖）")
+        return []
+
+
 def main():
     state = load_state()
     sources_state = state.get("sources", {})
@@ -1741,6 +1851,7 @@ def main():
     # === 并行采集 ===
     # 创作者 14 源（开发者遗留采集函数保留未删，恢复＝把对应行加回）
     collectors = {
+        "tavily": fetch_tavily,
         "weibo-hot": fetch_weibo_hot,
         "zhihu-hot": fetch_zhihu_hot,
         "bili-hot": fetch_bili_hot,
