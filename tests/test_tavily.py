@@ -2,6 +2,8 @@ import asyncio
 import json
 import os
 import unittest
+import tempfile
+from pathlib import Path
 from unittest.mock import patch
 from types import SimpleNamespace
 from contextlib import asynccontextmanager
@@ -9,6 +11,25 @@ from scripts import daily_signals as radar
 
 
 class TavilyTests(unittest.TestCase):
+    def test_queries_base_override_and_rejection(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp) / 'base.json'
+            override = Path(tmp) / 'agent.json'
+            base.write_text(json.dumps({'max_queries': 2, 'queries': [{'facet':'基础','query':'默认关键词'}]}))
+            override.write_text(json.dumps({'queries': [{'facet':'动态','query':'最新话题'}]}))
+            with patch.dict(os.environ, {'TAVILY_BASE_CONFIG': str(base), 'TAVILY_QUERY_FILE': ''}):
+                self.assertEqual(radar.load_tavily_queries(), [('基础', '默认关键词')])
+                os.environ['TAVILY_QUERY_FILE'] = str(override)
+                self.assertEqual(radar.load_tavily_queries(), [('动态', '最新话题')])
+                override.write_text(json.dumps({'queries':[{'facet':'x','query':'q'}] * 3}))
+                with self.assertRaises(ValueError): radar.load_tavily_queries()
+                override.write_text('{broken')
+                with self.assertRaises(ValueError): radar.load_tavily_queries()
+                override.write_text(json.dumps({'queries': []}))
+                with self.assertRaises(ValueError): radar.load_tavily_queries()
+                os.environ['TAVILY_QUERY_FILE'] = str(Path(tmp) / 'missing')
+                with self.assertRaises(ValueError): radar.load_tavily_queries()
+
     def test_normalize_and_deduplicate(self):
         data = {'results': [{'title': '标题', 'url': 'https://example.org/a', 'content': '摘要', 'published_date': '2026-10-30'},
                             {'title': '重复', 'url': 'https://example.org/a'},

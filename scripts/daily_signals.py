@@ -26,6 +26,13 @@ from pathlib import Path
 
 import requests
 
+try:
+    from .query_config import load_source_queries, topic_queries
+    from .source_config import load_signal_sources
+except ImportError:
+    from query_config import load_source_queries, topic_queries
+    from source_config import load_signal_sources
+
 # ============================================================
 # CONFIG
 # ============================================================
@@ -968,7 +975,8 @@ def fetch_xiaohongshu_reach():
         env.setdefault("DISPLAY", ":1")
         env.setdefault("PATH", os.environ.get("PATH", "") + os.pathsep + "/home/agentuser/.local/bin")
         # 多组选题关键词，每个词取少量结果
-        queries = ["女人40岁", "40岁女性 成长", "中年女性 健康", "女性 财务 独立"]
+        queries = load_source_queries("xiaohongshu")
+        topic_tags = dict((q, name) for name, q in topic_queries(os.environ.get("RADAR_QUERY_LANGUAGE", "zh"))) if not os.environ.get("RADAR_SEARCH_CONFIG") else {}
         seen_ids = set()
         for q in queries:
             try:
@@ -1012,7 +1020,7 @@ def fetch_xiaohongshu_reach():
                         points=likes_num,
                         timestamp=ts,
                         description=f"作者 {it.get('author', '')} | 赞 {likes}",
-                        extra_tags=["女性话题", "生活方式"],
+                        extra_tags=["女性话题", "生活方式"] + ([topic_tags[q]] if q in topic_tags else []),
                         extra_fields={},
                     ))
                 time.sleep(10)  # 同平台两次搜索至少隔 10 秒
@@ -1029,7 +1037,8 @@ def fetch_bilibili_reach():
     try:
         env = dict(os.environ)
         env.setdefault("DISPLAY", ":1")
-        queries = ["40岁 中女", "中年女性 健康", "女性 成长", "40岁 生活方式"]
+        queries = load_source_queries("bilibili-reach")
+        topic_tags = dict((q, name) for name, q in topic_queries(os.environ.get("RADAR_QUERY_LANGUAGE", "zh"))) if not os.environ.get("RADAR_SEARCH_CONFIG") else {}
         seen_ids = set()
         for q in queries:
             try:
@@ -1066,7 +1075,7 @@ def fetch_bilibili_reach():
                         points=plays,
                         timestamp=int(time.time()),
                         description=desc[:400],
-                        extra_tags=["生活方式", "女性话题"],
+                        extra_tags=["生活方式", "女性话题"] + ([topic_tags[q]] if q in topic_tags else []),
                         extra_fields={},
                     ))
                 time.sleep(10)
@@ -1084,7 +1093,11 @@ def fetch_weibo_reach():
     若无浏览器环境（cron 后台），降级为 requests 抓 SPA 外壳再正则抽卡（成功率低，标记 degraded）。
     """
     items = []
-    queries = ["中年女性 焦虑", "40岁 婚姻", "中年女性 健康", "40岁 独立"]
+    try:
+        queries = load_source_queries("weibo-reach")
+    except ValueError as e:
+        print(f"[ERROR] weibo-reach: {e}")
+        return items
     seen_ids = set()
 
     def _extract_div_block(html_seg: str, start_tag: str = '<div class="weibo-text">') -> str:
@@ -1190,7 +1203,7 @@ def fetch_weibo_reach():
             item_id=item_id,
             title=t[:80],
             # permalink 优先（约 2/3 帖子可回原帖），否则退回搜索页
-            url=card.get("permalink") or "https://m.weibo.cn/search?containerid=100103type%3D1%26q%3D%E4%B8%AD%E5%B9%B4%E5%A5%B3%E6%80%A7",
+            url=card.get("permalink") or "",
             points=0,
             timestamp=ts,
             description=t,
@@ -1732,15 +1745,50 @@ def fetch_baidu_hot():
     return items
 
 
-# Tavily MCP: 6 个主题，每次采集最多 6 次 basic 搜索（可能消耗额度）。
-TAVILY_QUERIES = [
-    ("自我成长", "40岁女性 自我成长 职场 生活 最新"),
-    ("健康与身体", "中年女性 健康 更年期 睡眠 最新"),
-    ("财务与搞钱", "中年女性 理财 财务 独立 养老 最新"),
-    ("关系与家庭", "中年女性 家庭 亲子 照护 关系 最新"),
-    ("心态与情绪", "中年女性 心理 情绪 压力 最新"),
-    ("生活方式", "40岁女性 生活方式 消费 兴趣 最新"),
-]
+# Tavily 查询词：默认配置可编辑；Agent 生成的查询可通过环境变量单次覆盖。
+def load_tavily_queries():
+    """读取基础配置和可选的 Agent 查询，严格校验并限制每次调用数。"""
+    base_path = Path(os.environ.get("TAVILY_BASE_CONFIG", SCRIPT_DIR.parent / "config" / "tavily_queries.json"))
+    try:
+        base = json.loads(base_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ValueError("无法读取基础查询配置") from exc
+    if not isinstance(base, dict):
+        raise ValueError("基础配置必须是 JSON 对象")
+    limit = base.get("max_queries")
+    if isinstance(limit, bool) or not isinstance(limit, int) or not 1 <= limit <= 20:
+        raise ValueError("max_queries 必须是 1 到 20 的整数")
+    override = os.environ.get("TAVILY_QUERY_FILE", "").strip()
+    if override:
+        try:
+            data = json.loads(Path(override).read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            raise ValueError("无法读取 Agent 查询文件，已跳过本次 Tavily 采集") from exc
+    else:
+        if base.get("mode") == "topic_facets":
+            selected = topic_queries(os.environ.get("RADAR_QUERY_LANGUAGE", "zh"))
+            if len(selected) > limit:
+                raise ValueError(f"主题切口数超过 Tavily 查询上限 {limit}")
+            return selected
+        data = base
+    if not isinstance(data, dict) or not isinstance(data.get("queries"), list):
+        raise ValueError("查询文件必须包含 queries 数组")
+    entries = data["queries"]
+    if not entries:
+        raise ValueError("queries 不能为空")
+    if len(entries) > limit:
+        raise ValueError(f"查询数超过配置上限 {limit}，已跳过本次 Tavily 采集")
+    queries = []
+    for item in entries:
+        if not isinstance(item, dict):
+            raise ValueError("每条查询必须为对象")
+        facet, query = item.get("facet"), item.get("query")
+        if not isinstance(facet, str) or not facet.strip() or not isinstance(query, str) or not query.strip():
+            raise ValueError("每条查询必须提供非空 facet 和 query")
+        if len(facet) > 100 or len(query) > 400:
+            raise ValueError("facet 或 query 过长")
+        queries.append((facet.strip(), query.strip()))
+    return queries
 
 
 def _tavily_results(payload, facet, seen):
@@ -1797,6 +1845,11 @@ def fetch_tavily():
     if not key:
         print("[INFO] tavily: 未设置 TAVILY_API_KEY，跳过")
         return []
+    try:
+        queries = load_tavily_queries()
+    except ValueError as exc:
+        print(f"[ERROR] tavily: 查询配置无效：{exc}")
+        return []
     server = Path(os.environ.get("TAVILY_MCP_SERVER", Path.home() / "tavily-mcp" / "build" / "index.js"))
     if not server.is_file():
         print("[ERROR] tavily: 本地 MCP 构建文件不存在，请在 tavily-mcp 目录运行 npm ci")
@@ -1816,7 +1869,7 @@ def fetch_tavily():
             async with stdio_client(config, errlog=errlog) as (read, write):
                 async with ClientSession(read, write) as session:
                     await session.initialize()
-                    for facet, query in TAVILY_QUERIES:
+                    for facet, query in queries:
                         try:
                             result = await asyncio.wait_for(session.call_tool("tavily_search", {
                                 "query": query, "search_depth": "basic", "max_results": 5,
@@ -1842,6 +1895,11 @@ def fetch_tavily():
         return []
 
 
+# 来源名称来自配置；未知/历史来源保留原始 key。
+def source_label(source, labels):
+    return labels.get(source, source)
+
+
 def main():
     state = load_state()
     sources_state = state.get("sources", {})
@@ -1849,8 +1907,9 @@ def main():
     start_time = time.time()
 
     # === 并行采集 ===
-    # 创作者 14 源（开发者遗留采集函数保留未删，恢复＝把对应行加回）
-    collectors = {
+    # 固定实现白名单：配置仅选择已实现的采集器，不执行配置中的任意代码。
+    available_collectors = {
+        "sspai": fetch_sspai,
         "tavily": fetch_tavily,
         "weibo-hot": fetch_weibo_hot,
         "zhihu-hot": fetch_zhihu_hot,
@@ -1866,6 +1925,21 @@ def main():
         "zhihu-daily": fetch_zhihu_daily,
         "baidu-hot": fetch_baidu_hot,
     }
+
+    try:
+        sources = load_signal_sources()
+    except ValueError as exc:
+        print(f"[ERROR] 信号源配置无效：{exc}", file=sys.stderr)
+        raise SystemExit(2)
+    unknown = [m['key'] for m in sources if m['key'] not in available_collectors]
+    if unknown:
+        print(f"[ERROR] 信号源未实现：{', '.join(unknown)}", file=sys.stderr)
+        raise SystemExit(2)
+    labels = {m['key']: m['name'] for m in sources}
+    collectors = {m['key']: available_collectors[m['key']] for m in sources if m['enabled']}
+    if not collectors:
+        print("[ERROR] 未启用任何信号源；未执行采集", file=sys.stderr)
+        raise SystemExit(2)
 
     all_results = {}
     with ThreadPoolExecutor(max_workers=MAX_PARALLEL) as executor:
@@ -1994,20 +2068,10 @@ def main():
     print(f"📡 「女人40岁之后」选题雷达 — {datetime.now(tz=timezone(timedelta(hours=8))).strftime('%Y-%m-%d %H:%M')}")
     print()
     print(f"采集耗时: {elapsed:.1f}s | 新增信号: {grand_total_new}")
-    source_labels = {
-        "trustmrr": "trustmrr", "indiehackers": "IndieHackers", "reddit": "Reddit",
-        "producthunt": "Product Hunt", "github": "GitHub 总榜", "github-js": "GitHub JS榜",
-        "github-zh": "GitHub 中文榜", "v2ex": "V2EX", "kr36": "36氪", "sspai": "少数派",
-        "oschina": "开源中国", "jike-ai-explore": "即刻·AI探索站",
-        "jike-ai-discuss": "即刻·AI讨论", "jike-engineer": "即刻·工程师",
-        "appstore-cn": "App Store 中国", "appstore-tw": "App Store 台湾",
-        "appstore-us": "App Store 美国", "appstore-jp": "App Store 日本",
-        "appstore-kr": "App Store 韩国",
-    }
     parts = []
     for name, items in per_source.items():
         if items:
-            parts.append(f"{source_labels.get(name, name)} ({len(items)}新)")
+            parts.append(f"{source_label(name, labels)} ({len(items)}新)")
     print(f"来源: {' | '.join(parts)}")
     print()
     print("=" * 60)
@@ -2020,29 +2084,8 @@ def main():
         # 按 points 排序
         sorted_items = sorted(items, key=lambda x: (x.get("mrr", 0) if source_name == "trustmrr" else x["points"]), reverse=True)
 
-        source_label = {
-            "trustmrr": "💰 trustmrr — 收入/收购信号",
-            "indiehackers": "🏗️ IndieHackers — 故事/案例",
-            "reddit": "💬 Reddit — 新产品讨论",
-            "producthunt": "🚀 Product Hunt — 今日新品",
-            "github": "🐙 GitHub 总榜",
-            "github-js": "🐙 GitHub JS榜",
-            "github-zh": "🐙 GitHub 中文榜",
-            "v2ex": "🟤 V2EX — 国内社区",
-            "kr36": "🔴 36氪 — 创投动态",
-            "sspai": "🟡 少数派 — 效率工具",
-            "oschina": "🟠 开源中国 — 开源动态",
-            "jike-ai-explore": "⚡ 即刻·AI探索站",
-            "jike-ai-discuss": "⚡ 即刻·人工智能讨论组",
-            "jike-engineer": "⚡ 即刻·工程师的日常",
-            "appstore-cn": "📱 App Store 中国·新应用",
-            "appstore-tw": "📱 App Store 台湾·新应用",
-            "appstore-us": "📱 App Store 美国·新应用",
-            "appstore-jp": "📱 App Store 日本·新应用",
-            "appstore-kr": "📱 App Store 韩国·新应用",
-        }.get(source_name, source_name)
 
-        print(f"\n## {source_label} ({len(items)} 条新)")
+        print(f"\n## {source_label(source_name, labels)} ({len(items)} 条新)")
         print()
 
         for i, item in enumerate(sorted_items[:15], 1):
@@ -2097,7 +2140,7 @@ def main():
             print(f"  #{word} ({count})")
     print()
     print("---")
-    print(f"✅ 数据来源: trustmrr.com + IndieHackers + Reddit + Product Hunt | "
+    print(f"✅ 本次新增来源: {'、'.join(source_label(name, labels) for name, items in per_source.items() if items)} | "
           f"采集耗时: {elapsed:.1f}s")
 
 

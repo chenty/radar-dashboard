@@ -12,7 +12,11 @@ import sys
 import time
 import urllib.parse
 
-KEYWORDS_DEFAULT = ["中年女性 焦虑", "40岁 婚姻", "中年女性 健康", "40岁 独立"]
+try:
+    from .query_config import load_source_queries
+except ImportError:
+    from query_config import load_source_queries
+
 
 
 def extract_from_html(html: str) -> list:
@@ -35,6 +39,6 @@ def build_url(query: str) -> str:
 
 
 if __name__ == "__main__":
-    queries = sys.argv[1:] or KEYWORDS_DEFAULT
+    queries = sys.argv[1:] or load_source_queries("weibo-reach")
     # 实际抓取在 hermes 浏览器内完成（见 fetch_weibo_reach）；此 CLI 仅输出计划，供调试
     print(json.dumps({"ok": True, "plan": [build_url(q) for q in queries]}, ensure_ascii=False))

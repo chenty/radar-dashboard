@@ -1,0 +1,127 @@
+{
+  "sources": [
+    {
+      "key": "tavily",
+      "name": "Tavily 全网搜索",
+      "emoji": "🔎",
+      "category": "定向搜索",
+      "type": "MCP",
+      "desc": "40+女性六大主题的新闻搜索，需要 TAVILY_API_KEY",
+      "enabled": true
+    },
+    {
+      "key": "sspai",
+      "name": "少数派",
+      "emoji": "🟡",
+      "category": "国内",
+      "type": "RSS",
+      "desc": "效率工具、数字生活、App 推荐",
+      "enabled": false
+    },
+    {
+      "key": "weibo-hot",
+      "name": "微博热搜",
+      "emoji": "🔥",
+      "category": "国内",
+      "type": "API",
+      "desc": "微博热搜榜 — 大众情绪与女性话题主阵地（公众号选题核心源）",
+      "enabled": true
+    },
+    {
+      "key": "zhihu-hot",
+      "name": "知乎热榜",
+      "emoji": "🧩",
+      "category": "国内",
+      "type": "API",
+      "desc": "知乎热榜 — 观点争议与深度讨论（找真争议点的富矿）",
+      "enabled": true
+    },
+    {
+      "key": "bili-hot",
+      "name": "B站热门",
+      "emoji": "📺",
+      "category": "国内",
+      "type": "API",
+      "desc": "B站全站热门 — 生活方式/健康/情感类视频趋势",
+      "enabled": true
+    },
+    {
+      "key": "kr36-flash",
+      "name": "36氪快讯",
+      "emoji": "📰",
+      "category": "国内",
+      "type": "RSS",
+      "desc": "36氪快讯 — 消费/创投/生活方式商业动态",
+      "enabled": true
+    },
+    {
+      "key": "xiaohongshu",
+      "name": "小红书定向",
+      "emoji": "📕",
+      "category": "国内",
+      "type": "Agent Reach",
+      "desc": "基于主题切口的定向搜索；需 Agent Reach 和本人登录",
+      "enabled": true
+    },
+    {
+      "key": "bilibili-reach",
+      "name": "B站定向",
+      "emoji": "🎬",
+      "category": "国内",
+      "type": "Agent Reach",
+      "desc": "40+ 女性/中女议题定向搜索（B站官方CLI）— 需本人登录",
+      "enabled": true
+    },
+    {
+      "key": "weibo-reach",
+      "name": "微博定向",
+      "emoji": "🗣️",
+      "category": "国内",
+      "type": "浏览器渲染",
+      "desc": "微博移动版「中年女性」议题搜索（免登录，需 agent 侧预渲染页面）",
+      "enabled": true
+    },
+    {
+      "key": "douyin-hot",
+      "name": "抖音热点",
+      "category": "大众风向",
+      "desc": "40+女性主力平台的大众话题风向标，免登录官方接口",
+      "enabled": true
+    },
+    {
+      "key": "thepaper-hot",
+      "name": "澎湃热榜",
+      "category": "社会议题",
+      "desc": "婚姻/社保/健康等政策深度报道，免登录",
+      "enabled": true
+    },
+    {
+      "key": "xueqiu-reach",
+      "name": "雪球热帖",
+      "category": "财务与搞钱",
+      "desc": "中年理财/养老规划讨论，agent-reach 免登录采集",
+      "enabled": true
+    },
+    {
+      "key": "netease-hot",
+      "name": "网易新闻热榜",
+      "category": "社会新闻",
+      "desc": "社会新闻里女性议题浓度最高的榜单（婚姻/安全/家暴），免登录",
+      "enabled": true
+    },
+    {
+      "key": "zhihu-daily",
+      "name": "知乎日报",
+      "category": "健康科普",
+      "desc": "健康/心理/认知类科普选题富矿，免登录",
+      "enabled": true
+    },
+    {
+      "key": "baidu-hot",
+      "name": "百度热搜",
+      "category": "民生政策",
+      "desc": "40+女性搜索主力平台的民生政策热词（社保/医保/退休），免登录",
+      "enabled": true
+    }
+  ]
+}

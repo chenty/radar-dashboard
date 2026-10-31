@@ -67,6 +67,17 @@ def get_report(date_str):
     return jsonify({'error': 'not found'}), 404
 
 
+@app.route('/api/topic-config')
+def get_topic_config():
+    """读取当前主题切口；无效配置返回错误，不影响历史日报。"""
+    from scripts.query_config import load_topic_facets
+    try:
+        data = load_topic_facets()
+        return jsonify(data)
+    except ValueError:
+        return jsonify({'error': '主题切口配置无效'}), 503
+
+
 @app.route('/api/modules/<module_name>')
 def get_module(module_name):
     """跨日期聚合指定模块的全部内容"""
@@ -127,36 +138,14 @@ def list_raw_dates():
     return jsonify(dates)
 
 
-# 信息源元信息（用于管理页展示）
-# 信息源管理页展示的源清单（创作者版：只显示与「女人40岁之后」选题相关的 8 源）。
-# 旧定位遗留源（trustmrr/indiehackers/reddit/producthunt/github×3/v2ex/kr36/oschina/jike×3/appstore×5）
-# 已从面板移除；daily_signals.py 的采集函数保留未删，需要时把对应行加回这里即可恢复。
-SOURCE_META = [
-    {"key": "tavily", "name": "Tavily 全网搜索", "emoji": "🔎", "category": "定向搜索", "type": "MCP", "desc": "40+女性六大主题的新闻搜索，需要 TAVILY_API_KEY"},
-    {"key": "sspai", "name": "少数派", "emoji": "🟡", "category": "国内", "type": "RSS", "desc": "效率工具、数字生活、App 推荐"},
-    {"key": "weibo-hot", "name": "微博热搜", "emoji": "🔥", "category": "国内", "type": "API", "desc": "微博热搜榜 — 大众情绪与女性话题主阵地（公众号选题核心源）"},
-    {"key": "zhihu-hot", "name": "知乎热榜", "emoji": "🧩", "category": "国内", "type": "API", "desc": "知乎热榜 — 观点争议与深度讨论（找真争议点的富矿）"},
-    {"key": "bili-hot", "name": "B站热门", "emoji": "📺", "category": "国内", "type": "API", "desc": "B站全站热门 — 生活方式/健康/情感类视频趋势"},
-    {"key": "kr36-flash", "name": "36氪快讯", "emoji": "📰", "category": "国内", "type": "RSS", "desc": "36氪快讯 — 消费/创投/生活方式商业动态"},
-    {"key": "xiaohongshu", "name": "小红书定向", "emoji": "📕", "category": "国内", "type": "Agent Reach", "desc": "「女人40岁之后」4 组关键词定向搜索 — 需本人登录（agent-reach login xiaohongshu）"},
-    {"key": "bilibili-reach", "name": "B站定向", "emoji": "🎬", "category": "国内", "type": "Agent Reach", "desc": "40+ 女性/中女议题定向搜索（B站官方CLI）— 需本人登录"},
-    {"key": "weibo-reach", "name": "微博定向", "emoji": "🗣️", "category": "国内", "type": "浏览器渲染", "desc": "微博移动版「中年女性」议题搜索（免登录，需 agent 侧预渲染页面）"},
-    {"key": "douyin-hot", "name": "抖音热点", "category": "大众风向", "status": "ok", "desc": "40+女性主力平台的大众话题风向标，免登录官方接口"},
-    {"key": "thepaper-hot", "name": "澎湃热榜", "category": "社会议题", "status": "ok", "desc": "婚姻/社保/健康等政策深度报道，免登录"},
-    {"key": "xueqiu-reach", "name": "雪球热帖", "category": "财务与搞钱", "status": "ok", "desc": "中年理财/养老规划讨论，agent-reach 免登录采集"},
-    {"key": "netease-hot", "name": "网易新闻热榜", "category": "社会新闻", "status": "ok", "desc": "社会新闻里女性议题浓度最高的榜单（婚姻/安全/家暴），免登录"},
-    {"key": "zhihu-daily", "name": "知乎日报", "category": "健康科普", "status": "ok", "desc": "健康/心理/认知类科普选题富矿，免登录"},
-    {"key": "baidu-hot", "name": "百度热搜", "category": "民生政策", "status": "ok", "desc": "40+女性搜索主力平台的民生政策热词（社保/医保/退休），免登录"},
-]
-
-
-# 各源采集脚本内对应的 last_seen 状态 key
-SOURCE_STATE_KEYS = {m["key"]: m["key"] for m in SOURCE_META}
-
-
 @app.route('/api/sources')
 def get_sources_status():
     """信息源管理：返回所有源的接入状态、可用性、最近采集情况"""
+    from scripts.source_config import load_signal_sources
+    try:
+        source_meta = load_signal_sources()
+    except ValueError:
+        return jsonify({'error': '信号源配置无效'}), 503
     # 读状态文件
     state = {}
     state_file = REPORTS_DIR.parent / 'daily_signals_state.json'
@@ -179,7 +168,7 @@ def get_sources_status():
 
     now_ts = int(time.time())
     result = []
-    for meta in SOURCE_META:
+    for meta in source_meta:
         key = meta['key']
         s = src_state.get(key, {})
         last_seen = s.get('last_seen_ts')
@@ -189,7 +178,11 @@ def get_sources_status():
         today_count = len(latest_raw.get('sources', {}).get(key, []))
 
         # 状态判定
-        if key == 'reddit':
+        if not meta['enabled']:
+            status = 'disabled'
+            status_text = '已停用'
+            note = '配置中已停用，不参与新采集'
+        elif key == 'reddit':
             # Reddit 需要 OAuth 才能稳定工作
             import os
             if not os.environ.get('REDDIT_CLIENT_ID'):
@@ -235,6 +228,7 @@ def get_sources_status():
         'total': len(result),
         'ok': sum(1 for r in result if r['status'] == 'ok'),
         'warn': sum(1 for r in result if r['status'] in ('config_required', 'error', 'stale', 'no_data')),
+        'disabled': sum(1 for r in result if r['status'] == 'disabled'),
         'last_run': state.get('last_run', ''),
         'latest_raw_date': list(latest_raw.keys())[0] if latest_raw else '',
     }

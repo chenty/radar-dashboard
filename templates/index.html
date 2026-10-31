@@ -1030,6 +1030,7 @@ function buildCopyText(obj) {
     // 公众号选题：全字段导出
     const fields = [
       ['启发', raw.signal],
+      ['子切口', raw.subfacet],
       ['核心观点', raw.corePoint],
       ['争议点', raw.controversy],
       ['目标读者', raw.audience],
@@ -1368,6 +1369,7 @@ function renderModuleItem(modKey, item) {
     { key: 'signal', label: '信号来源' },
     { key: 'whyNow', label: '为什么现在能做' },
     { key: 'inspiration', label: '启发' },
+    { key: 'subfacet', label: '子切口' },
     { key: 'corePoint', label: '核心观点' },
     { key: 'controversy', label: '争议点' },
     { key: 'audience', label: '目标读者' },
@@ -1537,11 +1539,14 @@ async function renderRaw(container, selectedDate, selectedSource) {
   const date = selectedDate || dates[0];
   const raw = await api(`/raw/${date}`);
   const sources = raw.sources || {};
+  const sourceConfig = await api('/sources').catch(() => ({sources: []}));
+  for (const meta of (sourceConfig.sources || [])) SOURCE_LABELS[meta.key] = meta.name;
 
   // 有数据的平台列表（按固定顺序）
   // 创作者 14 源优先，旧开发者源兜底（仅当日志里仍有历史数据时显示）
   const sourceOrder = ['tavily', 'xiaohongshu', 'weibo-reach', 'bilibili-reach', 'xueqiu-reach', 'weibo-hot', 'zhihu-hot', 'douyin-hot', 'baidu-hot', 'thepaper-hot', 'netease-hot', 'zhihu-daily', 'bili-hot', 'kr36-flash', 'sspai', 'github', 'github-js', 'github-zh', 'v2ex', 'kr36', 'oschina', 'jike-ai-explore', 'jike-ai-discuss', 'jike-engineer', 'appstore-cn', 'appstore-tw', 'appstore-us', 'appstore-jp', 'appstore-kr', 'trustmrr', 'indiehackers', 'reddit', 'producthunt'];
-  const availableSources = sourceOrder.filter(s => sources[s] && sources[s].length);
+  const configuredOrder = (sourceConfig.sources || []).map(s => s.key);
+  const availableSources = [...new Set([...configuredOrder, ...sourceOrder, ...Object.keys(sources)])].filter(s => Array.isArray(sources[s]) && sources[s].length);
   const activeSource = (selectedSource && sources[selectedSource]) ? selectedSource : (availableSources[0] || '');
 
   // 日期选择 + 布局
@@ -1558,13 +1563,13 @@ async function renderRaw(container, selectedDate, selectedSource) {
         ${availableSources.map(s => `
           <button class="raw-source-item ${s === activeSource ? 'active' : ''}" aria-pressed="${s === activeSource}" onclick="navigate('/raw/${date}/${s}')">
             <span class="src-dot" style="background:${SOURCE_COLORS[s] || '#8b90a0'}"></span>
-            <span>${SOURCE_LABELS[s] || s}</span>
+            <span>${escapeHtml(SOURCE_LABELS[s] || s)}</span>
             <span class="src-count">${sources[s].length}</span>
           </button>`).join('')}
       </div>
       <div class="raw-board">
         <div class="raw-board-header">
-          <h3>${SOURCE_LABELS[activeSource] || activeSource}</h3>
+          <h3>${escapeHtml(SOURCE_LABELS[activeSource] || activeSource)}</h3>
           <span class="board-meta">${raw.collected_at || ''} · ${sources[activeSource] ? sources[activeSource].length : 0} 条</span>
         </div>`;
 
@@ -1639,7 +1644,7 @@ async function renderSources(container) {
   const { summary, sources } = data;
   const statusText = {
     'ok': '正常', 'error': '异常', 'config_required': '需配置',
-    'stale': '久未采集', 'no_data': '未采集',
+    'stale': '久未采集', 'no_data': '未采集', 'disabled': '已停用',
   };
 
   // 汇总卡片
@@ -1651,26 +1656,23 @@ async function renderSources(container) {
       <div class="source-stat-card"><div class="num" style="font-size:1rem;padding-top:8px">${summary.last_run ? new Date(summary.last_run).toLocaleString('zh-CN', {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'}) : '—'}</div><div class="lbl">最近采集</div></div>
     </div>`;
 
-  // 分组：海外 / 国内
-  const groups = [
-    { key: '海外', label: '🌍 海外数据源' },
-    { key: '国内', label: '🇨🇳 国内数据源' },
-  ];
+  // 使用配置中的分类，不丢弃新增类别。
+  const groups = [...new Set(sources.map(s => s.category || '其他'))].map(key => ({key, label: key}));
   for (const g of groups) {
-    const list = sources.filter(s => s.category === g.key);
+    const list = sources.filter(s => (s.category || '其他') === g.key);
     if (!list.length) continue;
-    html += `<div class="source-group-title">${g.label}</div><div class="source-grid">`;
+    html += `<div class="source-group-title">${escapeHtml(g.label)}</div><div class="source-grid">`;
     for (const s of list) {
       html += `
         <div class="source-card">
           <div class="src-head">
-            <span class="src-emoji">${s.emoji}</span>
+            <span class="src-emoji">${escapeHtml(s.emoji || '📡')}</span>
             <span class="src-name">${escapeHtml(s.name)}</span>
             <span class="src-badge ${s.status}">${statusText[s.status] || s.status_text}</span>
           </div>
           <div class="src-desc">${escapeHtml(s.desc)}</div>
           <div class="src-meta">
-            <span>类型 <b>${s.type}</b></span>
+            <span>类型 <b>${escapeHtml(s.type || '—')}</b></span>
             <span>最近 <b>${s.last_seen_text}</b></span>
             <span>今日 <b>${s.today_count}</b> 条</span>
             <span>累计 <b>${s.seen_count}</b> 条</span>
@@ -1722,6 +1724,8 @@ async function renderTopics(container) {
     const f = (window._topicStatuses[key] || {}).facet || it.facet || '';
     if (f) facetCount[f] = (facetCount[f] || 0) + 1;
   }
+  const subfacetCount = {};
+  for (const it of items) { if (typeof it.subfacet === 'string' && it.subfacet) subfacetCount[it.subfacet] = (subfacetCount[it.subfacet] || 0) + 1; }
   const stageCount = {};
   for (const it of items) {
     const st = (window._topicStatuses[topicKey(it)] || {}).stage || 'idea';
@@ -1739,6 +1743,10 @@ async function renderTopics(container) {
         </div>
       </div>
     </div>
+    ${Object.keys(subfacetCount).length ? `<div class="source-stat-card" style="margin:10px 0"><div class="lbl">按子切口筛选</div><div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px">
+      <button class="subfacet-btn facet-btn active" data-subfacet="" onclick="filterBySubfacet(this)">全部</button>
+      ${Object.entries(subfacetCount).map(([f,n]) => `<button class="subfacet-btn facet-btn" data-subfacet="${escapeAttr(f)}" onclick="filterBySubfacet(this)">${escapeHtml(f)} ·${n}</button>`).join('')}
+    </div></div>` : ''}
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0">
       ${Object.entries(TOPIC_STAGES).map(([k, label]) => `<span style="font-size:.72rem;color:var(--muted-foreground)">${label} <b style="color:var(--foreground)">${stageCount[k] || 0}</b></span>`).join(' · ')}
     </div>
@@ -1760,13 +1768,22 @@ async function renderTopics(container) {
     grid.querySelectorAll('.topic-card').forEach(card => {
       const text = card.dataset.search || '';
       const facetOk = !window._activeFacet || (card.dataset.facet || '') === window._activeFacet;
-      card.style.display = facetOk && (!kw || text.includes(kw)) ? '' : 'none';
+      const subfacetOk = !window._activeSubfacet || (card.dataset.subfacet || '') === window._activeSubfacet;
+      card.style.display = facetOk && subfacetOk && (!kw || text.includes(kw)) ? '' : 'none';
     });
   };
   // 切面过滤
   window._activeFacet = '';
+  window._activeSubfacet = '';
+  window.filterBySubfacet = function(btn) {
+    document.querySelectorAll('.subfacet-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    window._activeSubfacet = btn.dataset.subfacet || '';
+    const input = document.getElementById('topicFilter');
+    if (input) window.filterTopics(input.value);
+  };
   window.filterByFacet = function(btn) {
-    document.querySelectorAll('.facet-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.facet-btn:not(.subfacet-btn)').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     window._activeFacet = btn.dataset.facet || '';
     const input = document.getElementById('topicFilter');
@@ -1798,7 +1815,7 @@ async function setTopicStage(key, stage) {
 
 function topicCardHtml(item) {
   const searchText = [item.title, item.signal, item.corePoint, item.controversy,
-    item.audience, item.expression, item.relatedSignal]
+    item.audience, item.expression, item.relatedSignal, item.subfacet]
     .join(' ').toLowerCase();
   const key = topicKey(item);
   const st = (window._topicStatuses || {})[key] || {};
@@ -1813,7 +1830,7 @@ function topicCardHtml(item) {
     (item.controversy || '') + '。表达要求：' + (item.expression || '') +
     '。开头用一个真实感场景切入，不鸡汤、不泛科普，1200-1800字。';
   return `
-    <div class="topic-card" data-search="${escapeHtml(searchText)}" data-facet="${escapeHtml(facet)}" data-topic-key="${key}">
+    <div class="topic-card" data-search="${escapeAttr(searchText)}" data-facet="${escapeAttr(facet)}" data-subfacet="${escapeAttr(item.subfacet || '')}" data-topic-key="${key}">
       <div class="topic-head">
         <span class="topic-title">✍️ ${escapeHtml(item.title || '未命名选题')}</span>
         ${favBtnHtml(favObj, 'large')}
@@ -1821,6 +1838,7 @@ function topicCardHtml(item) {
         <span class="topic-date">${item.date}</span>
       </div>
       ${facet ? `<div class="topic-line"><b>切面：</b><span class="facet-tag">${escapeHtml(facet)}</span></div>` : ''}
+      ${item.subfacet ? `<div class="topic-line"><b>子切口：</b><span class="facet-tag">${escapeHtml(item.subfacet)}</span></div>` : ''}
       ${item.corePoint ? `<div class="topic-line"><b>核心观点：</b>${escapeHtml(item.corePoint)}</div>` : ''}
       ${item.controversy ? `<div class="topic-line" style="color:var(--orange)"><b>🔥 争议点：</b>${escapeHtml(item.controversy)}</div>` : ''}
       ${item.audience ? `<div class="topic-line"><b>目标读者：</b>${escapeHtml(item.audience)}</div>` : ''}
@@ -1982,6 +2000,10 @@ function escapeHtml(str) {
   const div = document.createElement('div');
   div.textContent = str;
   return div.innerHTML;
+}
+
+function escapeAttr(str) {
+  return escapeHtml(str).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
 // ─── 主题切换（深色极简 / 暖色杂志） ───

@@ -11,11 +11,15 @@ fetch_weibo_reach() 读取（无头 cron 无法开浏览器，故采用渲染-�
 """
 import urllib.parse
 
-KEYWORDS = ["中年女性 焦虑", "40岁 婚姻", "中年女性 健康", "40岁 独立"]
+try:
+    from .query_config import load_source_queries
+except ImportError:
+    from query_config import load_source_queries
+
 
 def search_urls():
     urls = []
-    for q in KEYWORDS:
+    for q in load_source_queries("weibo-reach"):
         cid = urllib.parse.quote(f"100103type=1&q={q}", safe="")
         urls.append(f"https://m.weibo.cn/search?containerid={cid}")
     return urls

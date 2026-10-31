@@ -77,7 +77,7 @@ bash start.sh
 | 手动用 ChatGPT/Claude/DeepSeek 生成日报 | 改本 README「生成每日 AI 日报」里给 AI 的那段话（把「女人 40 岁之后」换成你的方向） |
 | 用 Hermes 自动生成（cron） | 改 Hermes cron job 的 prompt（模块内容规则） |
 
-**想改成其他内容方向**：把提示词里的选题规则换成你的定位即可，例如「面向宝妈的育儿科普：每条选题含 Hook 标题 / 核心观点 / 争议点 / 表达建议」。同时把 `scripts/daily_signals.py` 里三个 `fetch_*_reach()` 的关键词列表换成你方向相关词。
+**想改成其他内容方向**：把提示词里的选题规则换成你的定位即可，例如「面向宝妈的育儿科普：每条选题含 Hook 标题 / 核心观点 / 争议点 / 表达建议」。同时编辑 `config/search_queries.json` 和 `config/tavily_queries.json`，调整定向搜索词。
 
 **想恢复独立开发者方向**：本项目的上游 [susumr/radar-dashboard](https://github.com/susumr/radar-dashboard) 就是完整原版，直接用它更省事。
 
@@ -85,7 +85,7 @@ bash start.sh
 
 | 做什么 | 改哪里 |
 |-------|--------|
-| 加/删采集源 | `scripts/daily_signals.py`（采集逻辑）+ `app.py` 的 `SOURCE_META`（面板信息源管理页显示） |
+| 加/删采集源 | `scripts/daily_signals.py`（采集器实现白名单）+ `config/signal_sources.json`（采集开关及面板元信息） |
 | 调整页面模块 | `templates/index.html`（前端，单文件） |
 
 ## 🤖 给 AI Agent（Hermes / Cursor / Claude Code…）的阅读指南
@@ -216,4 +216,47 @@ ENHANCE_ZH=0 venv/bin/python scripts/daily_signals.py
 unset TAVILY_API_KEY
 ```
 
-密钥仅从环境变量读取，项目 `.env` 不会被自动加载。定时任务需要通过其安全的密钥管理机制提供环境变量。每次采集最多调用 6 次 `basic` 新闻搜索（每次最多 5 条），可能消耗 Tavily 配额或产生费用，请查看账户价格；按链接去重。缺少 Key 时跳过 Tavily，不影响其他信号源。搜索摘要仅是线索，撰写日报前应核实来源与事实；没有发布日期的结果使用采集时间，不代表发布时间。采集器同日重跑会覆盖当日原始文件，请先备份。日志不会打印密钥；此前在聊天中暴露的密钥应撤销并更换。
+密钥仅从环境变量读取，项目 `.env` 不会被自动加载。定时任务需要通过其安全的密钥管理机制提供环境变量。默认每次采集最多调用 6 次 `basic` 新闻搜索（每次最多 5 条），可能消耗 Tavily 配额或产生费用，请查看账户价格；按链接去重。缺少 Key 时跳过 Tavily，不影响其他信号源。搜索摘要仅是线索，撰写日报前应核实来源与事实；没有发布日期的结果使用采集时间，不代表发布时间。采集器同日重跑会覆盖当日原始文件，请先备份。日志不会打印密钥；此前在聊天中暴露的密钥应撤销并更换。
+
+
+#### Tavily 查询词：基础配置 + Agent 按需生成
+
+默认查询词来自 `config/topic_facets.json` 的各子切口，每个切口默认取第一条中文关键词；`RADAR_QUERY_LANGUAGE=en` 切换为英文。`config/tavily_queries.json` 的 `max_queries` 控制每次最多搜索多少次（1–20），直接影响 API 额度和费用。
+
+Agent 可先根据公众号定位、近期信号与用户关注点生成一个 JSON 文件，格式如下（请避免敏感个人信息）：
+
+```json
+{"queries": [
+  {"facet": "健康与身体", "query": "女性围绝经期 就医支持 最新"},
+  {"facet": "关系与家庭", "query": "家庭照护 职场 时间分配 最新"}
+]}
+```
+
+将文件保存到项目外或忽略的本地目录后，通过 `TAVILY_QUERY_FILE` **仅对该次运行**覆盖基础查询，例如：
+
+```bash
+TAVILY_QUERY_FILE=/绝对路径/agent-queries.json ENHANCE_ZH=0 venv/bin/python scripts/daily_signals.py
+```
+
+必须同时在采集进程环境提供 `TAVILY_API_KEY`。Agent 文件中的查询数量不能超过基础配置的 `max_queries`；基础或 Agent 文件格式错误、文件缺失、查询为空或超限时会跳过 Tavily 并输出错误，不会悄悄使用其他查询。未提供 `TAVILY_QUERY_FILE` 时，使用基础配置，这也是无人值守运行的回退方式。Agent 文件不会自动生成，必须由具备 AI 能力的 Agent 在运行前创建；普通 cron 只使用已有配置。搜索前仍应核实关键词及费用，采集结果需核实来源。
+
+
+#### 其他定向信号源搜索词
+
+小红书、B 站和微博定向搜索默认读取 `config/topic_facets.json` 各切口的第一条中文关键词；可设置 `RADAR_QUERY_LANGUAGE=en` 使用第一条英文关键词，修改后下次采集生效。`config/search_queries.json` 为兼容旧版的可选独立配置，按 `xiaohongshu`、`bilibili-reach`、`weibo-reach` 分组。每组须为 1–20 个非空字符串，每个词不超过 400 字；词数增加会增加搜索时间及平台请求。可设置 `RADAR_SEARCH_CONFIG` 指向其他同格式 JSON，便于不同运行环境使用不同配置。格式错误或该源的配置缺失时，该源报错并跳过，其他信号源继续运行。
+
+微博渲染 URL 生成脚本也读取同一配置：`venv/bin/python scripts/weibo_render_urls.py`。当前微博采集器的直连降级只使用配置中的**第一个**词；其他词仅用于渲染 URL 计划。微博浏览器缓存是现有的单个 HTML 文件，修改搜索词后需更新缓存，否则可能仍读取旧词结果。雪球与其他热榜源使用榜单接口，不是关键词搜索；Tavily 的预算与覆盖规则使用 `config/tavily_queries.json`。
+
+
+#### 主题切口与日报、面板
+
+`config/topic_facets.json` 是主题切口与中英文词的共同来源。默认每次每个切口使用所选语言的第一条词，不自动搜索所有同义词；Tavily 和小红书/B站按切口逐条查询，微博直连降级仅搜索第一条。切口数量不能超过 Tavily 的 `max_queries`，增加切口会增加调用和费用。可用 `RADAR_TOPIC_CONFIG` 指定同格式配置；每个切口需有唯一名称、非空 `zh` 和 `en` 关键词列表。
+
+日报保留原有 `facet` 大类，并在公众号选题条目中新增可选 `subfacet`，值为配置中的切口名称。面板支持按已有日报中的子切口筛选；老日报没有该字段也能正常显示，不会自动推断或修改历史数据。`GET /api/topic-config` 返回当前配置。Agent 应读取该配置、根据实际信号判断是否匹配，不要把搜索词标签当作事实；普通采集脚本不会自动生成 AI 日报。
+
+
+#### 信号源目录与开关
+
+`config/signal_sources.json` 是采集脚本和面板的信息源目录：`key` 对应已实现的采集器，`name`、`category`、`type`、`emoji`、`desc` 控制展示，`enabled` 控制是否参与采集。设置为 `false` 后，面板显示“已停用”，历史数据仍可查看。当前 `sspai` 已实现但默认关闭。修改配置后下一次采集生效，面板每次请求读取配置；定时任务和面板须使用同一文件（可通过 `RADAR_SOURCES_CONFIG` 指定路径）。
+
+配置文件只能启用或关闭已有采集器，不会自动实现新平台；新增平台仍需编写采集器并加入 `daily_signals.py` 的白名单，同时添加配置。配置无效、存在未知 key 或没有启用任何源时采集会报错退出，不覆盖当日数据或状态。无 API Key、登录态等仍可能导致个别已启用源不可用。

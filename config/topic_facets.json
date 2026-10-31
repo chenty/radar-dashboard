@@ -1,0 +1,54 @@
+{
+  "theme": "女性40岁之后",
+  "languages": ["zh", "en"],
+  "facets": [
+    {
+      "name": "中年离婚与重新出发",
+      "types": ["情感冲突型"],
+      "keywords": {
+        "zh": ["中年离婚 女性重新开始", "40岁离婚 财务独立"],
+        "en": ["divorce after 40 women", "rebuilding life after divorce"]
+      }
+    },
+    {
+      "name": "外貌、身材与白发焦虑",
+      "types": ["生活方式型", "观点争议型"],
+      "keywords": {
+        "zh": ["40岁女性 容貌焦虑 白发", "中年女性 身材 年龄歧视"],
+        "en": ["women over 40 aging appearance", "gray hair body image women"]
+      }
+    },
+    {
+      "name": "更年期与身体变化",
+      "types": ["生活方式型"],
+      "keywords": {
+        "zh": ["围绝经期 失眠 潮热 就医", "更年期女性 工作 生活"],
+        "en": ["perimenopause symptoms work", "menopause sleep support"]
+      }
+    },
+    {
+      "name": "中年职场与再就业",
+      "types": ["观点争议型"],
+      "keywords": {
+        "zh": ["40岁女性 职场年龄歧视", "中年女性 转行 再就业"],
+        "en": ["women over 40 workplace ageism", "midlife career change women"]
+      }
+    },
+    {
+      "name": "婚恋观与年龄差",
+      "types": ["情感冲突型", "观点争议型"],
+      "keywords": {
+        "zh": ["40岁女性 单身 婚恋", "中年女性 姐弟恋 社会偏见"],
+        "en": ["dating after 40 women", "age gap relationships older women"]
+      }
+    },
+    {
+      "name": "40+生育与不生育选择",
+      "types": ["情感冲突型", "观点争议型"],
+      "keywords": {
+        "zh": ["40岁生育 家庭压力", "中年女性 不生育选择"],
+        "en": ["pregnancy after 40 choices", "childfree women social pressure"]
+      }
+    }
+  ]
+}
