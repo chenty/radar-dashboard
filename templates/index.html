@@ -1323,18 +1323,49 @@ async function renderDaily(container, dateStr) {
   markFavorites(container);
 }
 
+// 金句使用统一适配器，兼容已发布的 quote/text 和 speaker 等字段。
+function quoteView(item) {
+  const first = (...values) => values.find(v => typeof v === 'string' && v.trim())?.trim() || '';
+  return {
+    text: first(item.quote, item.text, item.content),
+    author: first(item.author, item.speaker),
+    source: first(item.source, item.sourceName, item.source_name),
+    topic: first(item.topic, item.theme),
+    usage: first(item.usage, item.useCase, item.use_case),
+  };
+}
+
+function quoteSourceUrl(item) {
+  const raw = item.url || item.sourceUrl || item.source_url || '';
+  if (typeof raw !== 'string') return '';
+  try {
+    const url = new URL(raw);
+    return ['http:', 'https:'].includes(url.protocol) ? url.href : '';
+  } catch { return ''; }
+}
+
+function quoteFields(item, title) {
+  const q = quoteView(item);
+  return [
+    ['原文', q.text && q.text !== title ? q.text : ''],
+    ['作者/说话者', q.author], ['出处', q.source],
+    ['主题', q.topic], ['适用位置', q.usage],
+  ].filter(([, value]) => value);
+}
+
 function renderModuleItem(modKey, item) {
   if (!item || typeof item !== 'object') return '';
   let html = `<div class="module-item">`;
 
   // Title
-  const title = item.title || item.what || item.idea || item.suggestion || item.strategy || item.tool || item.lesson || item.observation || '(未命名)';
-  const sourceUrl = item.url || item.sourceUrl || item.source_url || '';
+  const isQuote = modKey === 'quoteBank';
+  const title = item.title || (isQuote ? quoteView(item).text : '') || item.what || item.idea || item.suggestion || item.strategy || item.tool || item.lesson || item.observation || '(未命名)';
+  const sourceUrl = isQuote ? quoteSourceUrl(item) : (item.url || item.sourceUrl || item.source_url || '');
   const favObj = {type: 'report_item', title: String(title), url: sourceUrl,
     source: modKey || '', source_label: moduleLabel(modKey || ''), date: item.date || '',
     desc: (item.signal || item.suggestion || item.what || item.idea || ''), module: modKey || '', raw: item};
   if (sourceUrl) {
-    html += `<h4><a href="${escapeHtml(sourceUrl)}" target="_blank" rel="noopener" style="color:var(--text);text-decoration:none;border-bottom:1px dashed var(--accent)">${escapeHtml(String(title))} ↗</a> ${favBtnHtml(favObj)} ${copyBtnHtml(favObj)}</h4>`;
+    html += `<h4><a href="${escapeAttr(sourceUrl)}" target="_blank" rel="noopener" style="color:var(--text);text-decoration:none;border-bottom:1px dashed var(--accent)">${escapeHtml(String(title))} ↗</a> ${favBtnHtml(favObj)} ${copyBtnHtml(favObj)}</h4>`;
   } else {
     html += `<h4>${escapeHtml(String(title))} ${favBtnHtml(favObj)} ${copyBtnHtml(favObj)}</h4>`;
   }
@@ -1379,6 +1410,12 @@ function renderModuleItem(modKey, item) {
   for (const f of fields) {
     if (item[f.key] && String(item[f.key]) !== String(title)) {
       html += `<div class="field"><strong>${f.label}：</strong>${escapeHtml(String(item[f.key]))}</div>`;
+    }
+  }
+
+  if (isQuote) {
+    for (const [label, value] of quoteFields(item, String(title))) {
+      html += `<div class="field"><strong>${escapeHtml(label)}：</strong>${escapeHtml(value)}</div>`;
     }
   }
 
@@ -1439,14 +1476,15 @@ async function renderModule(container, moduleName) {
       continue;
     }
 
-    const title = item.title || item.what || item.idea || item.suggestion || item.strategy || item.lesson || item.observation || '(未命名)';
+    const isQuote = moduleName === 'quotes';
+    const title = item.title || (isQuote ? quoteView(item).text : '') || item.what || item.idea || item.suggestion || item.strategy || item.lesson || item.observation || '(未命名)';
     const desc = (item.suggestion !== title ? item.suggestion : '') || item.monetization || item.perspective || item.judgment || item.scenario || '';
-    const sourceUrl = item.url || item.sourceUrl || item.source_url || '';
+    const sourceUrl = isQuote ? quoteSourceUrl(item) : (item.url || item.sourceUrl || item.source_url || '');
     const favObj = {type: 'report_item', title: String(title), url: sourceUrl,
       source: moduleName || '', source_label: moduleLabel(moduleName || ''), date: item.date || '',
       desc: String(desc), module: moduleName || '', raw: item};
     // Key fields to show inline based on module type
-    const keyFields = [];
+    const keyFields = isQuote ? quoteFields(item, String(title)) : [];
     if (item.revenue) keyFields.push(['收入', item.revenue]);
     if (item.what && item.what !== title) keyFields.push(['做什么', item.what]);
     if (item.signal) keyFields.push(['信号', item.signal]);
@@ -1473,7 +1511,7 @@ async function renderModule(container, moduleName) {
         <div class="date-col">${item.date}</div>
         <div class="content-col">
           ${sourceUrl
-            ? `<h4><a href="${escapeHtml(sourceUrl)}" target="_blank" rel="noopener" style="color:var(--text);text-decoration:none;border-bottom:1px dashed var(--accent)">${escapeHtml(String(title))} ↗</a> ${favBtnHtml(favObj)} ${copyBtnHtml(favObj)}</h4>`
+            ? `<h4><a href="${escapeAttr(sourceUrl)}" target="_blank" rel="noopener" style="color:var(--text);text-decoration:none;border-bottom:1px dashed var(--accent)">${escapeHtml(String(title))} ↗</a> ${favBtnHtml(favObj)} ${copyBtnHtml(favObj)}</h4>`
             : `<h4>${escapeHtml(String(title))} ${favBtnHtml(favObj)} ${copyBtnHtml(favObj)}</h4>`}
           ${desc ? `<p>${escapeHtml(String(desc))}</p>` : ''}
           ${keyFields.length ? '<div class="detail-fields">' +

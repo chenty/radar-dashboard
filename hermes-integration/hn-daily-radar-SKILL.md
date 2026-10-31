@@ -96,6 +96,7 @@ Tavily 默认查询来自 `config/topic_facets.json` 各切口的首个词，`co
       "relatedSignal": "关联标题及链接",
       "url": "https://example.com/source"
     }],
+    "quoteBank": [{"quote": "已核实的原话", "author": "原话作者或说话者", "source": "出处名称及核实状态", "topic": "相关主题", "usage": "适用位置", "url": "https://example.com/source"}],
     "dataSignals": [{"title": "信号标题", "observation": "观察", "judgment": "判断", "suggestion": "可写角度", "url": "https://example.com/source"}],
     "growthOps": [{"title": "运营建议", "strategy": "具体策略", "scenario": "适用场景"}],
     "dailyWisdom": {"method": "方法", "scenario": "场景", "steps": ["步骤一", "步骤二"], "derivation": "从当天数据的推导"}
@@ -103,7 +104,7 @@ Tavily 默认查询来自 `config/topic_facets.json` 各切口的首个词，`co
 }
 ```
 
-`facet` 仅选用六种切面之一。`quoteBank`、`sidebizCases` 等可选模块仅在有可靠素材时添加；尽量使用前端可显示的 `title`、`signal`、`suggestion`、`url` 等字段，并在可用字段中写明出处和核实状态。不要以示例链接或示例内容作为真实来源。保持 `publicAccountTopics`、`dataSignals`、`growthOps` 为数组，`dailyWisdom` 为包含 `method`、`scenario`、`steps`、`derivation` 的对象。
+`facet` 仅选用六种切面之一。`quoteBank` 的 `quote` 为可核实原话，`author` 为作者/说话者（无法确认时标明未确认），`source` 记录出处及核实状态，`topic`、`usage` 和 `url` 分别记录主题、适用位置及原文链接；`title` 可选，缺省时面板用原话作为标题。`quoteBank`、`sidebizCases` 等可选模块仅在有可靠素材时添加；尽量使用前端可显示的 `title`、`signal`、`suggestion`、`url` 等字段，并在可用字段中写明出处和核实状态。不要以示例链接或示例内容作为真实来源。保持 `publicAccountTopics`、`dataSignals`、`growthOps` 为数组，`dailyWisdom` 为包含 `method`、`scenario`、`steps`、`derivation` 的对象。
 
 ## 定时执行与推送
 

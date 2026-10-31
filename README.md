@@ -260,3 +260,14 @@ TAVILY_QUERY_FILE=/绝对路径/agent-queries.json ENHANCE_ZH=0 venv/bin/python 
 `config/signal_sources.json` 是采集脚本和面板的信息源目录：`key` 对应已实现的采集器，`name`、`category`、`type`、`emoji`、`desc` 控制展示，`enabled` 控制是否参与采集。设置为 `false` 后，面板显示“已停用”，历史数据仍可查看。当前 `sspai` 已实现但默认关闭。修改配置后下一次采集生效，面板每次请求读取配置；定时任务和面板须使用同一文件（可通过 `RADAR_SOURCES_CONFIG` 指定路径）。
 
 配置文件只能启用或关闭已有采集器，不会自动实现新平台；新增平台仍需编写采集器并加入 `daily_signals.py` 的白名单，同时添加配置。配置无效、存在未知 key 或没有启用任何源时采集会报错退出，不覆盖当日数据或状态。无 API Key、登录态等仍可能导致个别已启用源不可用。
+
+
+#### 金句素材格式
+
+日报的 `modules.quoteBank` 为数组；仅收录可核实的原话，并记录出处。示例结构（示例文本和链接不得当作真实引用）：
+
+```json
+{"quote":"已核实的原话","author":"作者或说话者","source":"来源及核实状态","topic":"主题","usage":"适用位置","url":"https://example.com/source"}
+```
+
+面板默认用 `quote` 作为标题，也支持可选的独立 `title`；兼容历史 `text`、`content` 和 `speaker` 字段。作者、出处、主题及适用位置会显示，正文与标题相同时不会重复。来源链接仅接受 HTTP(S)。素材不足可省略该模块；生成日报需要 AI Agent，采集脚本本身不生成金句。
