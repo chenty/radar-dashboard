@@ -38,9 +38,6 @@ if [ ! -f ".env" ]; then
 # 雷达日报 配置（可选，全部不填也能跑，只是功能少一些）
 # ============================================================
 
-# 【强烈推荐】DeepSeek API Key — 用于把英文信号自动翻译成中文
-# 获取: https://platform.deepseek.com/
-DEEPSEEK_API_KEY=
 
 # 【可选】trustmrr Key — 已验证收入创业公司数据
 # 获取: https://trustmrr.com/
@@ -67,6 +64,6 @@ echo "  启动:    bash start.sh"
 echo "  访问:    http://127.0.0.1:5080"
 echo "  采集:    python3 scripts/daily_signals.py"
 echo ""
-echo "  💡 没有 DeepSeek Key 也能跑，只是英文内容不会自动翻译"
+
 echo "  💡 详细说明见 README.md"
 echo "  💡 API Key 申请步骤见 CONFIG-GUIDE.md（手把手教学）"

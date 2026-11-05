@@ -153,9 +153,9 @@ crontab -e
 
 | Key | 作用 | 获取 | 优先级 |
 |-----|------|------|--------|
-| `DEEPSEEK_API_KEY` | 英文信号自动翻译中文（现役 14 源全中文，基本用不上） | https://platform.deepseek.com/ | ⚪ 可不配 |
+| ~~`DEEPSEEK_API_KEY`~~ | 已禁用；英文翻译改由 AI Agent 完成，无需配置 | — | ⚪ 不需要 |
 
-> 💡 **用了 Hermes 就不用重复配 DeepSeek Key**：采集脚本会自动读取 `~/.hermes/.env` 里的 `DEEPSEEK_API_KEY`，无需在项目 `.env` 里再填一遍。
+> 💡 翻译增强已禁用（`ENHANCE_ZH=0`）：英文内容由 AI Agent 在采集后翻译，无需额外配置。
 >
 > ⚪ **Reddit 建议不配**：Reddit 对数据中心 IP 风控严格，不配也不影响其他源。
 
@@ -189,8 +189,8 @@ radar-dashboard/
 **小红书 / B站定向搜索没数据？**
 这两个源需要本人扫码登录（Agent Reach 专用浏览器）：`agent-reach login xiaohongshu` / `agent-reach login bilibili`。登录态过期时源会静默缺失，重新登录即恢复。微博源需要 agent 侧先渲染页面（详见 Agent 阅读指南）。
 
-**没有 DeepSeek Key 会怎样？**
-英文内容不翻译，显示原文。其他功能正常。
+**英文内容会翻译吗？**
+英文内容由 AI Agent（如 Hermes）在采集后翻译成中文，无需额外配置。面板和其他功能正常。
 
 **数据存在哪？**
 全部在本机 `data/` 目录，纯 JSON 文本，方便备份迁移。
