@@ -1023,7 +1023,7 @@ def fetch_xiaohongshu_reach():
                         extra_tags=["女性话题", "生活方式"] + ([topic_tags[q]] if q in topic_tags else []),
                         extra_fields={},
                     ))
-                time.sleep(10)  # 同平台两次搜索至少隔 10 秒
+                time.sleep(25)  # 小红书限速：间隔≥25s 安全（12s 会触发验证码，用户规则）
             except Exception as e:
                 print(f"[ERROR] xiaohongshu query '{q}': {e}")
     except Exception as e:
